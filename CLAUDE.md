@@ -130,13 +130,18 @@ lib/
 ```
 
 ### Database (PostgreSQL 16)
-- **Desarrollo:** PostgreSQL 16 Alpine en docker-compose.yml
-- **Producción:** Neon PostgreSQL Serverless
+- **Desarrollo LOCAL:** PostgreSQL 16 Alpine en docker-compose.yml (NO Neon)
+  - Usuario: `garnacheros`
+  - Password: en `backend/.env.local`
+  - Database: `garnacheros`
+  - Host: `db:5432` (dentro de Docker)
+- **Producción (VPS):** Neon PostgreSQL Serverless
+  - DATABASE_URL configurada en VPS vía SSH
+  - Conexión externa con SSL
 - Schema: 2 tablas (`spots`, `reviews`)
 - Índices en `spot_id`, `user_id`, `city`
 - Foreign keys con `ON DELETE CASCADE`
 - Migraciones en TypeScript (se corren en `seed.ts`)
-- Credenciales locales: usuario=garnacheros, password=garnacheros_dev_password
 
 ## 📝 Convenciones del código
 
