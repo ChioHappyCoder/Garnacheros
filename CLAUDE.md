@@ -273,7 +273,7 @@ docker-compose logs -f app
 docker-compose logs -f api
 ```
 
-### En VPS
+### En VPS (Ubuntu 24 LTS)
 ```bash
 ssh user@technoapps.agency
 cd Garnacheros
@@ -281,12 +281,30 @@ git pull origin main
 
 # Copiar/actualizar .env con variables reales
 cat > .env << EOF
-DATABASE_URL=postgresql://...
-CLERK_SECRET_KEY=sk_live_...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+DATABASE_URL=postgresql://user:pass@neon.tech/garnacheros?sslmode=require
+CLERK_SECRET_KEY=sk_live_xxxxx
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx
+FRONTEND_URL=https://garnacheros.technoapps.agency
+NEXT_PUBLIC_API_URL=https://garnacheros.technoapps.agency/api
 EOF
 
+chmod 600 .env
+
+# Desplegar con docker-compose.prod.yml
 docker-compose -f docker-compose.prod.yml up -d --build
+
+# Ver logs
+docker-compose -f docker-compose.prod.yml logs -f api
+docker-compose -f docker-compose.prod.yml logs -f app
+docker-compose -f docker-compose.prod.yml logs -f web
+```
+
+### Health Checks
+```bash
+# Verificar que todos los contenedores estén healthy
+docker-compose -f docker-compose.prod.yml ps
+
+# Output esperado: Status "healthy" para api, app, web
 ```
 
 ## ⚠️ Errores comunes
