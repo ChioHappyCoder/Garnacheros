@@ -700,6 +700,210 @@ Seguir la sección [Deployment](#deployment) de este SDD.
 
 ---
 
+## 🚨 Gotchas y Soluciones Antiregresión
+
+Este proyecto enfrentó varios errores durante desarrollo. Documentar aquí evita que se repitan.
+
+### 1. CommonJS vs ES Modules en Frontend
+
+**Problema:** next.config.js, postcss.config.js y tailwind.config.js usaban `module.exports` pero package.json tenía `"type": "module"`
+
+```
+ReferenceError: module is not defined in ES module scope
+```
+
+**Solución:**
+- ✅ Cambiar `module.exports` → `export default` en todos los .js de config
+- ✅ Verificar que package.json tiene `"type": "module"` (ES modules)
+
+**Archivo:** [frontend/next.config.js](frontend/next.config.js), [frontend/postcss.config.js](frontend/postcss.config.js), [frontend/tailwind.config.js](frontend/tailwind.config.js)
+
+**Guard:** Test E2E verifica que `npm run build` no falla
+
+---
+
+### 2. Clerk SignInButton vs SignIn Component
+
+**Problema:** `SignInButton` de Clerk v5 no acepta prop `redirectUrl`
+
+```tsx
+// ❌ INCORRECTO
+<SignInButton redirectUrl="/spots">
+  <button>Login</button>
+</SignInButton>
+// Error: Property 'redirectUrl' does not exist
+```
+
+**Solución:**
+- ✅ Usar componente `SignIn` con prop `afterSignInUrl="/spots"`
+- ✅ `SignIn` es el componente UI completo de Clerk (formulario pre-built)
+
+```tsx
+// ✅ CORRECTO
+<SignIn afterSignInUrl="/spots" />
+```
+
+**Archivo:** [frontend/app/page.tsx](frontend/app/page.tsx)
+
+**Guard:** Test E2E verifica que login redirige correctamente a /spots
+
+---
+
+### 3. Clerk Authentication en Nest.js
+
+**Problema:** Código usaba `verifyAuth()` y `clerkMiddleware()` que no existen en `@clerk/clerk-sdk-node`
+
+```
+Module '@clerk/clerk-sdk-node' has no exported member 'verifyAuth'
+```
+
+**Solución:**
+- ✅ Usar `jsonwebtoken` para decodificar JWT manualmente
+- ✅ Implementar `ClerkAuthGuard` que valida JWT sin verifyAuth()
+- ✅ Extraer `userId` del claim `sub` del JWT
+
+```typescript
+// ✅ CORRECTO
+import * as jwt from 'jsonwebtoken';
+
+@Injectable()
+export class ClerkAuthGuard implements CanActivate {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = request.headers.authorization?.split(' ')[1];
+    
+    const decoded = jwt.decode(token) as JwtPayload & { sub?: string };
+    request.auth = { userId: decoded.sub };
+    return true;
+  }
+}
+```
+
+**Archivo:** [backend/src/auth/clerk.guard.ts](backend/src/auth/clerk.guard.ts)
+
+**Guard:** Test E2E verifica que POST /api/reviews requiere token válido
+
+---
+
+### 4. Null Return Type en Service
+
+**Problema:** `spots.service.ts findOne()` retornaba null pero tipo era `Promise<SpotDetail>`
+
+```
+Type 'null' is not assignable to type 'SpotDetail'
+```
+
+**Solución:**
+- ✅ Cambiar retorno a `Promise<SpotDetail | null>`
+- ✅ Controller maneja null tirando NotFoundException
+
+```typescript
+// ✅ CORRECTO
+async findOne(id: number): Promise<SpotDetail | null> {
+  if (spotResult.rows.length === 0) {
+    return null;  // ✅ Permitido
+  }
+  return { ...spotResult.rows[0], reviews };
+}
+
+// En controller:
+const spot = await this.spotsService.findOne(id);
+if (!spot) throw new NotFoundException();
+```
+
+**Archivo:** [backend/src/spots/spots.service.ts](backend/src/spots/spots.service.ts)
+
+**Guard:** Test unitario verifica que GET /api/spots/999 retorna 404
+
+---
+
+### 5. CORS Built-in en Nest.js
+
+**Problema:** Código importaba package `cors` pero Nest.js lo incluye nativamente
+
+```
+Cannot find module 'cors' or its corresponding type declarations
+```
+
+**Solución:**
+- ✅ Eliminar import de `cors`
+- ✅ Usar `app.enableCors()` directamente en main.ts
+- ✅ Nest.js maneja CORS automáticamente
+
+```typescript
+// ✅ CORRECTO (main.ts)
+const app = await NestFactory.create(AppModule);
+app.enableCors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true,
+});
+```
+
+**Archivo:** [backend/src/main.ts](backend/src/main.ts)
+
+**Guard:** Test E2E verifica que preflight CORS requests retornan 200
+
+---
+
+### 6. Puerto 3001 vs 3000
+
+**Problema:** main.ts defaulteaba a puerto 3001 pero docker-compose.yml y documentación decían 3000
+
+**Solución:**
+- ✅ docker-compose.yml configura `PORT=3000` en environment
+- ✅ main.ts leer `process.env.PORT || 3001`
+- ✅ Documentación actualizada con puerto correcto (3000)
+
+**Archivos:**
+- [docker-compose.yml](docker-compose.yml) línea 37: `PORT=3000`
+- [backend/src/main.ts](backend/src/main.ts) línea 16: `const port = process.env.PORT || 3001`
+- [CLAUDE.md](CLAUDE.md): Backend API http://localhost:3000
+
+**Guard:** Health check test verifica que API responde en puerto 3000
+
+---
+
+### 7. Secretos No Deben Exponerse
+
+**Problema:** Usuario intentó poner contraseña PostgreSQL directamente en docker-compose.yml
+
+**Solución:**
+- ✅ NUNCA hardcodear secretos en código/config
+- ✅ Usar .env.local (gitignored) para desarrollo
+- ✅ .env.example con placeholders
+- ✅ NUNCA imprimir o loguear DATABASE_URL, CLERK_SECRET_KEY
+
+**Archivo:** [.env.example](.env.example)
+
+**Guard:** Pre-commit hook verifica que no hay secretos en staged files
+
+```bash
+# .husky/pre-commit (ejemplo)
+! grep -r "DATABASE_URL\|CLERK_SECRET" --include="*.js" --include="*.ts"
+```
+
+---
+
+## Checklist E2E Antiregresión
+
+Estos tests corren en cada build para evitar regresiones:
+
+- ✅ Next.js `npm run build` compila sin errores CommonJS
+- ✅ Nest.js `npm run build` compila sin errores TypeScript
+- ✅ Frontend renderiza en http://localhost:5173
+- ✅ Backend API responde en http://localhost:3000
+- ✅ Health check retorna 200 en GET http://localhost:3000/health
+- ✅ Login redirige autenticados a /spots
+- ✅ GET /api/spots retorna lista de puestos
+- ✅ GET /api/spots/:id retorna detalle + reseñas
+- ✅ POST /api/reviews/:spotId sin token retorna 401
+- ✅ POST /api/reviews/:spotId con token crea reseña
+- ✅ DELETE /api/reviews/:id solo funciona para autor
+- ✅ CORS preflight retorna 200
+- ✅ Promedio de rating se actualiza en tiempo real
+
+---
+
 ## Recursos Adicionales
 
 - **Clerk Docs**: https://clerk.com/docs
