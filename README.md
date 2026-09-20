@@ -62,18 +62,29 @@ Garnacheros/
 ├── 📦 backend/
 │   ├── src/
 │   │   ├── db/
-│   │   │   ├── db.ts           # Pool de conexión Neon
+│   │   │   ├── db.ts           # Pool de conexión PostgreSQL
 │   │   │   ├── schema.ts       # Migraciones SQL
 │   │   │   └── seed.ts         # Datos iniciales (10 puestos)
-│   │   ├── routes/
-│   │   │   ├── spots.ts        # GET /api/spots, GET /api/spots/:id
-│   │   │   └── reviews.ts      # POST/DELETE /api/reviews
-│   │   ├── middleware/
-│   │   │   └── auth.ts         # Validación JWT de Clerk
-│   │   ├── types.ts            # Extensión Express Request
-│   │   └── index.ts            # App principal Express
+│   │   ├── main.ts             # Bootstrap Nest.js
+│   │   ├── app.module.ts       # Módulo raíz
+│   │   ├── app.controller.ts   # Health check
+│   │   ├── auth/
+│   │   │   └── clerk.guard.ts  # Guard JWT de Clerk
+│   │   ├── spots/
+│   │   │   ├── spots.controller.ts
+│   │   │   ├── spots.service.ts
+│   │   │   └── spots.module.ts
+│   │   ├── reviews/
+│   │   │   ├── reviews.controller.ts
+│   │   │   ├── reviews.service.ts
+│   │   │   └── reviews.module.ts
+│   │   ├── database/
+│   │   │   ├── database.module.ts
+│   │   │   └── database.provider.ts
+│   │   ├── common/
+│   │   │   └── types.ts        # Interfaces TypeScript
 │   ├── Dockerfile              # Build multi-stage Node
-│   ├── tsconfig.json           # ES2022 target
+│   ├── tsconfig.json           # ES2022 target + decorators
 │   └── package.json
 │
 ├── 🎨 frontend/
@@ -103,8 +114,8 @@ Garnacheros/
 │   ├── postcss.config.js
 │   └── package.json
 │
-├── 🐳 docker-compose.yml       # Dev (3 servicios: api, app, web)
-├── 🐳 docker-compose.prod.yml  # Prod (VPS-ready)
+├── 🐳 docker-compose.yml       # Dev (4 servicios: db, api, app, web)
+├── 🐳 docker-compose.prod.yml  # Prod (VPS-ready con 4 servicios)
 ├── CLAUDE.md                   # Guía de desarrollo
 ├── .env.example                # Template variables
 ├── .gitignore
@@ -135,7 +146,7 @@ FRONTEND_URL=http://localhost:3000
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
 CLERK_SECRET_KEY=sk_test_xxxxx
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
 ### 2️⃣ Instalar dependencias
@@ -156,9 +167,9 @@ docker-compose up --build
 
 | Servicio | URL | Descripción |
 |----------|-----|-------------|
-| **Frontend** | http://localhost | Interfaz Next.js (via Nginx) |
-| **Backend** | http://localhost:3001 | REST API Nest.js |
-| **Health** | http://localhost/health | Estado de servicios (Nginx) |
+| **Frontend** | http://localhost:5173 | Next.js 14 (modo desarrollo - como Vite) |
+| **Backend API** | http://localhost:3000 | REST API Nest.js |
+| **Health** | http://localhost:3000/health | Estado del backend |
 | **Database** | localhost:5432 | PostgreSQL 16 |
 
 ### 4️⃣ Conectar a la Base de Datos Local

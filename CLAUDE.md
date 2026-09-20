@@ -70,10 +70,10 @@ cd backend && npm run seed
 ```
 
 **URLs en desarrollo:**
-- Frontend: http://localhost (via Nginx) o http://localhost:3000 (Next.js directo)
-- Backend: http://localhost:3001
-- API: http://localhost/api
-- Health: http://localhost/health
+- Frontend: http://localhost:5173 (Next.js directo - como Vite)
+- Backend API: http://localhost:3000
+- Health API: http://localhost:3000/health
+- Nginx Proxy: http://localhost/api (en producción)
 - Database: postgresql://garnacheros:garnacheros_dev_password@localhost:5432/garnacheros
 
 **Base de datos local:**
@@ -178,7 +178,7 @@ git commit -m "perf: Optimización"
    # frontend/.env.local
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
    CLERK_SECRET_KEY=sk_test_xxxxx
-   NEXT_PUBLIC_API_URL=http://localhost:3001/api
+   NEXT_PUBLIC_API_URL=http://localhost:3000/api
    ```
 
 2. **Backend** — dotenv carga automáticamente en `src/index.ts`:

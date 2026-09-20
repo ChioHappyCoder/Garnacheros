@@ -71,14 +71,16 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
 | Runtime | Node.js | 22 | LTS, mejor rendimiento, soporte CommonJS/ESM |
 
 ### DevOps
-| Componente | Tecnología | Versión | Justificación |
-|------------|-----------|---------|---------------|
-| Containerización | Docker | 24+ | Reproducible, portable, escalable |
-| Orquestación | Docker Compose | 2.0+ | Coordina 4 servicios (api, app, web, db) |
-| Database Container | PostgreSQL Alpine | 16 | Mismo que VPS, lightweight, reproducible |
-| Reverse Proxy | Nginx | Alpine | Lightweight, rápido, enrutamiento eficiente |
-| SSL/TLS | Let's Encrypt | Gratis | HTTPS automático, renovación gratis |
-| VPS | Debian 12 / Ubuntu 24 LTS | — | Compatible con Docker Engine 24+ |
+| Componente | Tecnología | Versión | Puerto(s) | Justificación |
+|------------|-----------|---------|-----------|---------------|
+| Containerización | Docker | 24+ | — | Reproducible, portable, escalable |
+| Orquestación | Docker Compose | 2.0+ | — | Coordina 4 servicios (db, api, app, web) |
+| Database | PostgreSQL Alpine | 16 | 5432 | Mismo que VPS, lightweight, reproducible |
+| Backend API | Nest.js | 10.3 | 3000 | TypeScript puro, modular, inyección de dependencias |
+| Frontend App | Next.js | 14 | 5173 | SSR/SSG, App Router, desarrollo tipo Vite |
+| Reverse Proxy | Nginx | Alpine | 80 | Lightweight, rápido, enrutamiento eficiente |
+| SSL/TLS | Let's Encrypt | Gratis | 443 | HTTPS automático, renovación gratis |
+| VPS | Ubuntu 24 LTS | — | — | Compatible con Docker Engine 24+ |
 
 ---
 
@@ -97,11 +99,11 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
     │  • Proxea /api/* a backend│
     └────┬──────────┬───────────┘
          │          │
-    ┌────▼──┐  ┌───▼──────────────┐
-    │Next.js│  │   Nest.js API    │
-    │  App  │  │  (Modules +      │
-    │(3000) │  │   Controllers)   │ (puerto 3001)
-    └──┬────┘  └────┬──────────────┘
+    ┌────▼──────┐  ┌───▼──────────────┐
+    │  Next.js  │  │   Nest.js API    │
+    │   App     │  │  (Modules +      │
+    │ (5173)    │  │   Controllers)   │ (puerto 3000)
+    └──┬────────┘  └────┬──────────────┘
        │            │
        │     ┌──────▼────────────┐
        │     │ Neon PostgreSQL   │
