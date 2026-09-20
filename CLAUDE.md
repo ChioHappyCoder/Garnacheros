@@ -349,6 +349,44 @@ docker-compose -f docker-compose.prod.yml ps
 # Output esperado: Status "healthy" para api, app, web
 ```
 
+## 🧪 Tests E2E con Playwright
+
+Suite de tests automáticos para prevenir regresiones:
+
+```bash
+# Instalar dependencias (incluidas automáticamente)
+npm install
+
+# Ejecutar todos los tests
+npm run test:e2e
+
+# Modo debug (paso a paso)
+npm run test:e2e:debug
+
+# Interfaz interactiva
+npm run test:e2e:ui
+```
+
+**Tests incluidos:**
+- ✅ Health checks (API en puerto 3000, Frontend en puerto 5173)
+- ✅ GET /api/spots (lista, filtros)
+- ✅ GET /api/spots/:id (detalle con reseñas)
+- ✅ GET /api/spots/999 (404 para ID inválido)
+- ✅ POST /api/reviews sin token (401 Unauthorized)
+- ✅ DELETE /api/reviews sin token (401 Unauthorized)
+- ✅ Login page renderiza correctamente
+- ✅ CORS preflight requests
+
+**Requisitos antes de ejecutar tests:**
+1. `docker-compose up -d` (contenedores corriendo)
+2. `npm run seed` (datos iniciales en DB)
+3. `npm run test:e2e` (ejecutar suite)
+
+**Archivo de config:** [playwright.config.ts](playwright.config.ts)  
+**Tests ubicados en:** [tests/e2e/](tests/e2e/)
+
+---
+
 ## ⚠️ Errores comunes
 
 | Error | Causa | Solución |
