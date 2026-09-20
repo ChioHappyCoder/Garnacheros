@@ -6,12 +6,28 @@ Guía de desarrollo específica para el proyecto Garnacheros.
 
 ## ⚠️ REGLAS CRÍTICAS (MANDATORY & FORBIDDEN)
 
-**🚫 PROHIBIDO FIRMAR COMMITS** — Todos los commits deben hacerse **SIN FIRMA** (`git commit -m "..."` sin Co-Authored-By).
-
-Esta es una regla del proyecto. Si usas `git commit` sin la firma, la herramienta de CI/CD rechazará el commit. Configurar:
+### 🚫 PROHIBIDO FIRMAR COMMITS
+Todos los commits deben hacerse **SIN FIRMA** (`git commit -m "..."` sin Co-Authored-By).
 ```bash
 git config commit.gpgsign false
 ```
+
+### 🔐 PROHIBIDO EXPONER SECRETOS EN PANTALLA O GITHUB
+**NUNCA** imprimir, loguear, o commitear:
+- `CLERK_SECRET_KEY` (sk_live_*, sk_test_*)
+- `CLERK_PUBLISHABLE_KEY` (pk_live_*, pk_test_*)
+- `DATABASE_URL` (contiene credenciales de Neon)
+- `.env` archivos
+- API keys, tokens, o credenciales de cualquier tipo
+
+**Reglas de oro:**
+- ❌ NUNCA usar `cat`, `echo`, `grep -n` sobre `.env*` archivos
+- ❌ NUNCA pasar secretos a herramientas de IA o servicios terceros
+- ❌ NUNCA commitear `.env` o archivos con credenciales
+- ✅ SIEMPRE usar `.env.example` con placeholders
+- ✅ SIEMPRE validar antes de cualquier `git push`
+
+Si accidentalmente se expone un secreto → **Rotar inmediatamente en Clerk + Neon** → **No recuperable.**
 
 ---
 
