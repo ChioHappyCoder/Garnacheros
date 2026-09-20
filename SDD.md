@@ -64,7 +64,7 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
 |------------|-----------|---------|---------------|
 | Framework | Nest.js | 10.3 | Arquitectura modular, inyección de dependencias, TypeScript first |
 | Lenguaje | TypeScript | 5.3 | Tipado estricto, decoradores, mejor mantenibilidad |
-| Base de Datos | PostgreSQL (Neon) | Serverless | Managed, escalable, sin DevOps |
+| Base de Datos | PostgreSQL | 16 (dev), Neon (prod) | Serverless en prod, Alpine en dev local |
 | Driver SQL | pg | 8.23 | Queries parameterizadas, previene SQL injection |
 | Autenticación | @clerk/clerk-sdk-node | 4.13 | Validación JWT en guards, middleware nativo |
 | Variables | dotenv | 18.0 | Carga segura de secretos desde .env |
@@ -74,10 +74,11 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
 | Componente | Tecnología | Versión | Justificación |
 |------------|-----------|---------|---------------|
 | Containerización | Docker | 24+ | Reproducible, portable, escalable |
-| Orquestación | Docker Compose | 2.0 | Coordina 3 servicios (app, api, web) |
+| Orquestación | Docker Compose | 2.0+ | Coordina 4 servicios (api, app, web, db) |
+| Database Container | PostgreSQL Alpine | 16 | Mismo que VPS, lightweight, reproducible |
 | Reverse Proxy | Nginx | Alpine | Lightweight, rápido, enrutamiento eficiente |
 | SSL/TLS | Let's Encrypt | Gratis | HTTPS automático, renovación gratis |
-| VPS | Cualquiera | — | Tested en Debian 12 + Ubuntu 22.04 |
+| VPS | Debian 12 / Ubuntu 24 LTS | — | Compatible con Docker Engine 24+ |
 
 ---
 
@@ -193,12 +194,23 @@ CREATE INDEX idx_reviews_created_at ON reviews(created_at DESC);
 
 ### Inicialización de Datos
 
+**Desarrollo local (Docker):**
+- PostgreSQL 16 se crea automáticamente en docker-compose.yml
+- Usuario: `garnacheros`, Password: `garnacheros_dev_password`
+- Base de datos: `garnacheros`
+- Volumen: `postgres_data` (persistencia entre restarts)
+
+**Cargar datos iniciales:**
 Script `backend/src/db/seed.ts`:
-```typescript
-// Carga 10-30 puestos iniciales
-// Fuentes: DENUE (INEGI) + Google Places API (opcional)
-// Ejecutar con: npm run seed
+```bash
+npm run seed
+# Carga 10-30 puestos reales en PostgreSQL
 ```
+
+**En producción (VPS):**
+- Database: Neon PostgreSQL Serverless
+- Conexión: `DATABASE_URL` desde .env en VPS
+- Scripts se ejecutan con `npm run seed` tras deploy
 
 ---
 

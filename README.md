@@ -27,7 +27,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 
 ### Database & Auth
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)](https://neon.tech)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Neon](https://img.shields.io/badge/Neon-Serverless-000000?logo=postgresql&logoColor=white)](https://neon.tech)
 [![Clerk](https://img.shields.io/badge/Clerk-JWT%20Auth-6C63FF?logo=clerk&logoColor=white)](https://clerk.com)
 
 ### DevOps & Deployment
@@ -116,17 +117,18 @@ Garnacheros/
 
 ### Requisitos
 - **Node.js** 22+
-- **Docker** y **Docker Compose**
-- Cuentas en **Clerk** y **Neon** (gratuitas)
+- **Docker** y **Docker Compose** (incluye PostgreSQL 16 Alpine)
+- Cuenta en **Clerk** (gratuita)
+- Cuenta en **Neon** (gratuita, para producción en VPS)
 
 ### 1️⃣ Configurar variables de entorno
 
 **Crear `backend/.env`:**
 ```bash
-DATABASE_URL=postgresql://user:password@host:5432/garnacheros
 CLERK_SECRET_KEY=sk_test_xxxxx
 PORT=3001
 FRONTEND_URL=http://localhost:3000
+# DATABASE_URL se genera automáticamente en docker-compose.yml
 ```
 
 **Crear `frontend/.env.local`:**
@@ -155,10 +157,25 @@ docker-compose up --build
 | Servicio | URL | Descripción |
 |----------|-----|-------------|
 | **Frontend** | http://localhost | Interfaz Next.js (via Nginx) |
-| **Backend** | http://localhost:3001 | REST API Express |
-| **Health** | http://localhost/health | Estado de los servicios |
+| **Backend** | http://localhost:3001 | REST API Nest.js |
+| **Health** | http://localhost/health | Estado de servicios (Nginx) |
+| **Database** | localhost:5432 | PostgreSQL 16 |
 
-### 4️⃣ Seedear datos iniciales
+### 4️⃣ Conectar a la Base de Datos Local
+
+**PostgreSQL 16 está corriendo en localhost:5432**
+
+```bash
+psql -h localhost -U garnacheros -d garnacheros
+# Password: garnacheros_dev_password
+```
+
+**O usar desde Docker:**
+```bash
+docker-compose exec db psql -U garnacheros -d garnacheros
+```
+
+### 5️⃣ Seedear datos iniciales
 
 ```bash
 cd backend

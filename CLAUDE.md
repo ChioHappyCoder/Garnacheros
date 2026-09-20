@@ -129,11 +129,14 @@ lib/
 └── api.ts               # Cliente HTTP + tipos
 ```
 
-### Database (Neon)
+### Database (PostgreSQL 16)
+- **Desarrollo:** PostgreSQL 16 Alpine en docker-compose.yml
+- **Producción:** Neon PostgreSQL Serverless
 - Schema: 2 tablas (`spots`, `reviews`)
 - Índices en `spot_id`, `user_id`, `city`
 - Foreign keys con `ON DELETE CASCADE`
 - Migraciones en TypeScript (se corren en `seed.ts`)
+- Credenciales locales: usuario=garnacheros, password=garnacheros_dev_password
 
 ## 📝 Convenciones del código
 
@@ -319,11 +322,13 @@ docker-compose -f docker-compose.prod.yml ps
 
 | Error | Causa | Solución |
 |-------|-------|----------|
-| `DATABASE_URL` undefined | `.env` no configurado | Copiar `.env.example` → `.env` + llenar valores |
+| `Cannot connect to database` | PostgreSQL no está corriendo | `docker-compose up db` para iniciar PostgreSQL |
+| `ECONNREFUSED 127.0.0.1:5432` | DB no en puerto 5432 | Verificar `docker-compose ps` y `docker-compose logs db` |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` undefined | Vars no cargadas | Solo `NEXT_PUBLIC_*` llegan al frontend. Reiniciar `npm run dev` |
-| 401 en reseñas | Token Clerk inválido | ClerkAuthGuard valida el JWT. Verificar token en header |
+| 401 en reseñas | Token Clerk inválido | ClerkAuthGuard valida el JWT. Verificar header Authorization |
 | 403 al eliminar reseña | No eres el autor | Guard valida `req.auth.userId` contra `review.user_id` |
 | Error de módulo Nest.js | Importación circular | Verificar que DatabaseModule se importe en módulos que lo usan |
+| Tables don't exist | Seed no corrió | Ejecutar `npm run seed` tras `docker-compose up` |
 
 ## 🚫 Prohibido en Garnacheros
 
