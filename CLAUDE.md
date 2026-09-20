@@ -74,6 +74,14 @@ cd backend && npm run seed
 - Backend: http://localhost:3001
 - API: http://localhost/api
 - Health: http://localhost/health
+- Database: postgresql://garnacheros:garnacheros_dev_password@localhost:5432/garnacheros
+
+**Base de datos local:**
+```bash
+psql postgresql://garnacheros:garnacheros_dev_password@localhost:5432/garnacheros
+# O
+psql -h localhost -U garnacheros -d garnacheros
+```
 
 ## 🔧 Stack específico
 
