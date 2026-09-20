@@ -1,145 +1,303 @@
 # 🌮 Garnacheros
 
-Sitio web para calificar y descubrir los mejores puestos de comida callejera en CDMX y Aguascalientes.
+<div align="center">
 
-## Stack
+### Califica y descubre los mejores puestos de comida callejera en CDMX y Aguascalientes
 
-- **Frontend**: React + Vite + TypeScript + Tailwind CSS
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: Neon (Postgres serverless)
-- **Auth**: Clerk
-- **Deployment**: Docker + Nginx
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
 
-## Requisitos
+</div>
 
-- Node.js 22+
-- Docker Desktop
-- Cuentas en Clerk y Neon (opcionales para desarrollo local)
+---
 
-## Desarrollo local
+## 🛠️ Tech Stack
 
-### 1. Configurar variables de entorno
+### Frontend
+[![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-5+-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Clerk Auth](https://img.shields.io/badge/Clerk-Authentication-6C63FF?logo=clerk&logoColor=white)](https://clerk.com)
 
-**Backend** (`backend/.env`):
+### Backend
+[![Node.js](https://img.shields.io/badge/Node.js-22+-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Express.js](https://img.shields.io/badge/Express.js-4.18-000000?logo=express&logoColor=white)](https://expressjs.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+### Database & Auth
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?logo=postgresql&logoColor=white)](https://neon.tech)
+[![Clerk](https://img.shields.io/badge/Clerk-JWT%20Auth-6C63FF?logo=clerk&logoColor=white)](https://clerk.com)
+
+### DevOps & Deployment
+[![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
+[![Docker Compose](https://img.shields.io/badge/Docker_Compose-Orchestration-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose)
+[![Nginx](https://img.shields.io/badge/Nginx-Reverse_Proxy-009639?logo=nginx&logoColor=white)](https://nginx.org)
+[![Let's Encrypt](https://img.shields.io/badge/Let's_Encrypt-SSL/TLS-60C659?logo=letsencrypt&logoColor=white)](https://letsencrypt.org)
+
+---
+
+## ⚡ Características
+
+- ✨ **Autenticación moderna** con Clerk (OAuth + Email/Password)
+- 🗺️ **20+ puestos** reales documentados en CDMX y Aguascalientes
+- 🔍 **Búsqueda inteligente** por nombre, tipo de comida y colonia
+- 🏙️ **Filtrado por ciudad** con un clic
+- ⭐ **Sistema de reseñas** con calificación 1-5 estrellas
+- 💬 **Comentarios personalizados** en cada reseña
+- 📊 **Promedio dinámico** de calificaciones
+- 📱 **Interfaz 100% responsive** (mobile-first)
+- 🎨 **Paleta temática** naranja/roja inspirada en comida callejera
+- 🚀 **Deployment dockerizado** listo para VPS
+- 🔒 **CORS y validación JWT** en todos los endpoints
+
+---
+
+## 📁 Estructura del Proyecto
+
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/garnacheros
-CLERK_SECRET_KEY=your_clerk_secret_key
+Garnacheros/
+├── 📦 backend/
+│   ├── src/
+│   │   ├── db/
+│   │   │   ├── db.ts           # Pool de conexión Neon
+│   │   │   ├── schema.ts       # Migraciones SQL
+│   │   │   └── seed.ts         # Datos iniciales (10 puestos)
+│   │   ├── routes/
+│   │   │   ├── spots.ts        # GET /api/spots, GET /api/spots/:id
+│   │   │   └── reviews.ts      # POST/DELETE /api/reviews
+│   │   ├── middleware/
+│   │   │   └── auth.ts         # Validación JWT de Clerk
+│   │   ├── types.ts            # Extensión Express Request
+│   │   └── index.ts            # App principal
+│   ├── Dockerfile              # Build multi-stage Node
+│   ├── tsconfig.json           # ES2022 target
+│   └── package.json
+│
+├── 🎨 frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Header.tsx      # Nav + UserButton
+│   │   │   ├── SpotsList.tsx   # Grid con filtros
+│   │   │   ├── SpotCard.tsx    # Card individual
+│   │   │   └── SpotDetail.tsx  # Vista detalle + reseñas
+│   │   ├── api/
+│   │   │   └── client.ts       # Cliente axios + tipos
+│   │   ├── App.tsx             # Router principal
+│   │   └── index.css           # Tailwind globals
+│   ├── Dockerfile              # Build + Nginx multi-stage
+│   ├── nginx.conf              # Config reverse proxy
+│   ├── tailwind.config.js
+│   ├── vite.config.ts          # Proxy /api a backend
+│   └── package.json
+│
+├── 🐳 docker-compose.yml       # Dev (sin DB local)
+├── 🐳 docker-compose.prod.yml  # Prod (VPS-ready)
+├── .gitignore
+├── .env.example
+└── README.md
+```
+
+---
+
+## 🚀 Quick Start
+
+### Requisitos
+- **Node.js** 22+
+- **Docker** y **Docker Compose**
+- Cuentas en **Clerk** y **Neon** (gratuitas)
+
+### 1️⃣ Configurar variables de entorno
+
+**Crear `backend/.env`:**
+```bash
+DATABASE_URL=postgresql://user:password@host:5432/garnacheros
+CLERK_SECRET_KEY=sk_test_xxxxx
 PORT=3001
 FRONTEND_URL=http://localhost:5173
 ```
 
-**Frontend** (`frontend/.env.local`):
-```
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+**Crear `frontend/.env.local`:**
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
 VITE_API_URL=http://localhost:3001/api
 ```
 
-### 2. Instalar dependencias
+### 2️⃣ Instalar dependencias
 
 ```bash
+# Frontend
 cd frontend && npm install
+
+# Backend
 cd ../backend && npm install
 ```
 
-### 3. Ejecutar con Docker Compose
+### 3️⃣ Ejecutar en desarrollo
 
 ```bash
-docker-compose up
+docker-compose up --build
 ```
 
-Frontend estará disponible en `http://localhost`
-Backend estará disponible en `http://localhost:3001`
+| Servicio | URL | Descripción |
+|----------|-----|-------------|
+| **Frontend** | http://localhost | Interfaz SPA |
+| **Backend** | http://localhost:3001 | REST API |
+| **API Docs** | http://localhost:3001/health | Health check |
 
-### 4. Seedear datos
+### 4️⃣ Seedear datos iniciales
 
 ```bash
 cd backend
 npm run seed
 ```
 
-## Producción
+Esto cargará 10 puestos reales:
+- 🏪 El Califa de León (CDMX) ⭐ Estrella Michelin
+- 🏪 Lechón Rudy (Aguascalientes)
+- 🏪 Carnitas Mora (Aguascalientes)
+- 🏪 Las Planchitas (Aguascalientes)
+- ...y 6 más
 
-### Preparar VPS
+---
+
+## 📦 Producción en VPS
+
+### Deploy en tu servidor
 
 ```bash
-# En tu VPS
-docker login
-docker pull [tu-registry]/garnacheros-web:latest
-docker pull [tu-registry]/garnacheros-api:latest
+# 1. SSH al VPS
+ssh user@technoapps.agency
 
-# Crear archivo .env con variables de producción
+# 2. Clonar repo
+git clone https://github.com/ChioHappyCoder/Garnacheros.git
+cd Garnacheros
+
+# 3. Crear archivo .env
 cat > .env << EOF
-DATABASE_URL=postgresql://...
-CLERK_SECRET_KEY=...
-VITE_CLERK_PUBLISHABLE_KEY=...
+DATABASE_URL=postgresql://user:password@neon.tech/garnacheros
+CLERK_SECRET_KEY=sk_live_xxxxx
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx
 DOMAIN=garnacheros.technoapps.agency
 EOF
 
-# Desplegar
-docker-compose -f docker-compose.prod.yml up -d
+# 4. Desplegar
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
-### SSL con Let's Encrypt
+### Configurar SSL (Let's Encrypt)
 
 ```bash
-# Instalar Certbot en el VPS
-sudo apt update && sudo apt install certbot python3-certbot-nginx
+sudo apt update && sudo apt install -y certbot python3-certbot-nginx
 
 # Generar certificado
 sudo certbot certonly --standalone -d garnacheros.technoapps.agency
 
-# Actualizar nginx.conf y reiniciar
+# Actualizar nginx.conf con rutas de certificado
+# Reiniciar contenedor web
+docker-compose -f docker-compose.prod.yml restart web
 ```
 
-## Estructura del proyecto
+---
 
+## 🔌 API Endpoints
+
+### Puestos (Sin autenticación)
 ```
-/
-├── backend/
-│   ├── src/
-│   │   ├── db/
-│   │   │   ├── db.ts       # Conexión a Neon
-│   │   │   ├── schema.ts   # Migraciones
-│   │   │   └── seed.ts     # Datos iniciales
-│   │   ├── routes/
-│   │   │   ├── spots.ts    # GET /api/spots
-│   │   │   └── reviews.ts  # POST/DELETE /api/reviews
-│   │   ├── middleware/
-│   │   │   └── auth.ts     # Middleware de Clerk
-│   │   └── index.ts        # App principal
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.tsx
-│   │   │   ├── SpotsList.tsx
-│   │   │   ├── SpotCard.tsx
-│   │   │   └── SpotDetail.tsx
-│   │   ├── api/
-│   │   │   └── client.ts   # Cliente HTTP
-│   │   ├── App.tsx
-│   │   └── index.css
-│   ├── Dockerfile
-│   └── nginx.conf
-├── docker-compose.yml      # Desarrollo
-├── docker-compose.prod.yml # Producción
-└── README.md
+GET  /api/spots                    # Listar todos con filtros
+GET  /api/spots?city=CDMX&search=tacos
+GET  /api/spots/:id                # Detalle con reseñas
 ```
 
-## Features
+### Reseñas (Requiere JWT de Clerk)
+```
+POST   /api/reviews/:spotId        # Crear reseña (autenticado)
+DELETE /api/reviews/:id            # Eliminar reseña (solo autor)
+```
 
-- ✅ Autenticación con Clerk
-- ✅ Listado de 20+ puestos de comida callejera
-- ✅ Filtrar por ciudad (CDMX / Aguascalientes)
-- ✅ Búsqueda por nombre, tipo de comida o colonia
-- ✅ Dejar reseñas y calificaciones (1-5 estrellas)
-- ✅ Ver promedio de calificación por puesto
-- ✅ Eliminar tus propias reseñas
-- ✅ Interfaz responsive (móvil y desktop)
-- ✅ Paleta de colores naranja/roja temática
+---
 
-## Notas
+## 💾 Base de Datos
 
-- Los datos iniciales se cargan desde `/backend/src/db/seed.ts` — incluyen puestos reales documentados en CDMX y Aguascalientes.
-- El backend valida todos los tokens de Clerk antes de permitir crear/eliminar reseñas.
-- El frontend usa Tailwind CSS para estilos — sin dependencias de librerías de UI.
+### Tablas
+
+**`spots`**
+```sql
+id (PK)
+name, city, address, colonia, food_type, hours
+description, image_url
+latitude, longitude
+created_at
+```
+
+**`reviews`**
+```sql
+id (PK)
+spot_id (FK → spots)
+user_id (Clerk ID)
+rating (1-5)
+comment
+created_at
+```
+
+---
+
+## 🎨 Diseño & UX
+
+- **Paleta de colores**: Naranjas y rojos inspirados en comida callejera
+- **Typography**: Sans-serif limpia y legible
+- **Responsive**: Mobile-first, optimizado para pantallas pequeñas
+- **Animaciones**: Hover effects sutiles, transiciones suave
+- **Accesibilidad**: Semántica HTML, contrast ratios WCAG AA
+
+---
+
+## 🔐 Seguridad
+
+✅ **Validación JWT** en todos los endpoints protegidos  
+✅ **CORS configurado** para dominios permitidos  
+✅ **SQL parameterizado** contra inyecciones  
+✅ **Autorización granular** (solo eliminar propias reseñas)  
+✅ **Variables de entorno** nunca en el código  
+✅ **HTTPS/TLS** en producción con Let's Encrypt  
+
+---
+
+## 📝 Licencia
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Este proyecto está bajo licencia MIT. Ver [`LICENSE`](./LICENSE) para más detalles.
+
+---
+
+## 👨‍💻 Desarrollo
+
+```bash
+# Formato de commits
+git commit -m "feat: Descripción de la feature"
+git commit -m "fix: Descripción del bug fix"
+git commit -m "docs: Actualización de documentación"
+```
+
+---
+
+## 📚 Recursos
+
+- [React Documentation](https://react.dev)
+- [Express.js Guide](https://expressjs.com)
+- [Neon PostgreSQL](https://neon.tech)
+- [Clerk Authentication](https://clerk.com/docs)
+- [Docker Best Practices](https://docs.docker.com)
+- [Tailwind CSS](https://tailwindcss.com)
+
+---
+
+<div align="center">
+
+### Hecho con ❤️ para los amantes de la comida callejera
+
+**[Visitar sitio](https://garnacheros.technoapps.agency)** • **[Reportar bug](https://github.com/ChioHappyCoder/Garnacheros/issues)** • **[Sugerir feature](https://github.com/ChioHappyCoder/Garnacheros/discussions)**
+
+</div>
