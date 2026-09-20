@@ -1,8 +1,10 @@
+import "./types.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { clerkMiddleware } from "@clerk/clerk-sdk-node";
-import { initDb, createTables } from "./db/db.js";
+import { initDb } from "./db/db.js";
+import { createTables } from "./db/schema.js";
 import spotsRouter from "./routes/spots.js";
 import reviewsRouter from "./routes/reviews.js";
 

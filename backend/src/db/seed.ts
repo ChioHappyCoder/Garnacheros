@@ -1,16 +1,6 @@
 import { query, initDb } from "./db.js";
 import { createTables } from "./schema.js";
 
-declare global {
-  namespace Express {
-    interface Request {
-      auth?: {
-        userId?: string;
-      };
-    }
-  }
-}
-
 const SPOTS = [
   {
     name: "El Califa de León",
