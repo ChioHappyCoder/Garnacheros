@@ -113,23 +113,78 @@ git commit -m "perf: Optimización"
 - ✅ Siempre crear `.env.example` con placeholders
 - ✅ Variables de entorno: VITE_* (frontend), DATABASE_URL/CLERK_*  (backend)
 
-## 🔐 Manejo de secretos
+## 🔐 Manejo de secretos con dotenv
 
-**Regla de oro:** Ningún secreto en código ni commits.
+**Regla de oro:** Ningún secreto en código ni commits. Usar **dotenv** para cargar desde archivos `.env`.
 
-| Secreto | Dónde va | Quién lo conoce |
-|---------|----------|-----------------|
-| `CLERK_SECRET_KEY` | `backend/.env` (VPS) | Solo el VPS |
-| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env.local` | Local + GitHub Actions (si hay) |
-| `DATABASE_URL` | `backend/.env` (VPS) | Solo el VPS |
+### Setup
 
-Nunca hacer:
+1. **Crear archivos `.env` locales** (nunca commitear):
+   ```bash
+   # backend/.env
+   DATABASE_URL=postgresql://user:password@host:5432/garnacheros
+   CLERK_SECRET_KEY=sk_test_xxxxx
+   PORT=3001
+   FRONTEND_URL=http://localhost:5173
+   
+   # frontend/.env.local
+   VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+   VITE_API_URL=http://localhost:3001/api
+   ```
+
+2. **Backend** — dotenv carga automáticamente en `src/index.ts`:
+   ```ts
+   import dotenv from "dotenv";
+   dotenv.config(); // Carga backend/.env automáticamente
+   
+   const dbUrl = process.env.DATABASE_URL; // ✅ BIEN
+   ```
+
+3. **Frontend** — Vite carga automáticamente variables `VITE_*`:
+   ```ts
+   const apiUrl = import.meta.env.VITE_API_URL; // ✅ BIEN (Vite)
+   // NO usar process.env en frontend (no existe en el browser)
+   ```
+
+### Distribución de secretos
+
+| Secreto | Archivo | Producción (VPS) |
+|---------|---------|------------------|
+| `DATABASE_URL` | `backend/.env` | Configurar en VPS vía SSH |
+| `CLERK_SECRET_KEY` | `backend/.env` | Solo en VPS, nunca en GitHub |
+| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env.local` | Puede estar en GitHub Actions (seguro, no es secreto) |
+
+**Nunca hacer:**
 ```ts
-// ❌ MALO
+// ❌ MALO — hardcodear secretos
 const CLERK_SECRET = "sk_live_xxxxx";
 
-// ✅ BIEN
+// ✅ BIEN — cargar desde dotenv
 const CLERK_SECRET = process.env.CLERK_SECRET_KEY;
+```
+
+### En producción (VPS)
+```bash
+# SSH al VPS
+ssh user@technoapps.agency
+cd Garnacheros
+
+# Crear backend/.env con valores reales
+cat > backend/.env << EOF
+DATABASE_URL=postgresql://user:pass@neon.tech/db
+CLERK_SECRET_KEY=sk_live_xxxxx
+PORT=3001
+FRONTEND_URL=https://garnacheros.technoapps.agency
+EOF
+
+# Crear frontend/.env.local si es necesario
+cat > frontend/.env.local << EOF
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_xxxxx
+VITE_API_URL=https://garnacheros.technoapps.agency/api
+EOF
+
+# Docker automáticamente carga estos .env
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
 ## 📡 API Design
