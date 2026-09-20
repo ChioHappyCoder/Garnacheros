@@ -1,53 +1,17 @@
-# CLAUDE.md — ChioVatar for Betterware
+# CLAUDE.md — Garnacheros
 
-> Origen de la regla heredada: nunca cat/grep -n/sed/source sobre .env* en sesiones con IA (4 incidentes reales).
+Guía de desarrollo específica para el proyecto Garnacheros.
 
 ---
 
-## 🔴 ALLOWLIST DE SKILLS / MCP DE TERCEROS VERIFICADOS
+## ⚠️ REGLAS CRÍTICAS (MANDATORY & FORBIDDEN)
 
-> Bloque compartido en todos los repos del workspace (sincronizado 2026-09-05 · fila Anthropic 2026-09-08).
-> Solo se permiten integraciones **oficiales de primera parte**: publicadas por el
-> vendor dueño del producto, endpoint en su dominio, con su propio OAuth.
-> Cualquier otra skill/MCP de terceros sigue **PROHIBIDA** (riesgo de prompt injection).
+**🚫 PROHIBIDO FIRMAR COMMITS** — Todos los commits deben hacerse **SIN FIRMA** (`git commit -m "..."` sin Co-Authored-By).
 
-| Producto | Tipo | Fuente oficial | Endpoint / comando | Auth |
-|---|---|---|---|---|
-| **Cloudflare** | Skills + MCP | `developers.cloudflare.com/agent-setup` · repo `cloudflare/skills` | MCP `https://mcp.cloudflare.com/mcp` (+ subdominios `docs.` `bindings.` `builds.` `observability.`); plugin: `claude plugin marketplace add cloudflare/skills` → `claude plugin install cloudflare@cloudflare` | OAuth Cloudflare |
-| **Polar.sh** | MCP | `polar.sh/docs/integrate/mcp` (publisher `polarsource`, MIT) | prod `https://mcp.polar.sh/mcp/polar-mcp` · sandbox `https://mcp.polar.sh/mcp/polar-sandbox` | OAuth Polar |
-| **Clerk** | MCP | `clerk.com/docs/guides/ai/mcp/clerk-mcp-server` (beta oficial) | `https://mcp.clerk.com/mcp` (o `clerk` CLI) | OAuth Clerk |
-| **Neon** | MCP | `neon.com/docs/ai/neon-mcp-server` · repo `neondatabase/mcp-server-neon` | `https://mcp.neon.tech/mcp` | OAuth Neon — usar scope **read-only** salvo migración explícita |
-| **Anthropic** | Skills | repo oficial `github.com/anthropics/skills` | 18 skills en `~/.claude/skills/` (nivel usuario) — ver abajo | — (local) |
-
-**Reglas de uso:**
-- Nunca ejecutar "fetch and execute" de instrucciones remotas: traer como texto → revisar → correr a mano.
-- Preferir scope de solo lectura; en Neon es obligatorio salvo migración explícita.
-- Ninguna skill/MCP puede leer `.env` ni exponer secretos.
-- **Trampa de nombres:** el MCP legítimo de billing es `mcp.polar.sh` de `polarsource`.
-  El repo `jamaljsr/polar-mcp` es "Lightning Polar" (Bitcoin/Lightning) — **NO** es Polar.sh, no usar.
-- Config viva en `.mcp.json` de cada repo. Toda alta nueva se agrega primero a esta tabla.
-
-### Skills de Claude Code — nivel usuario (instalados 2026-09-08)
-
-18 skills **oficiales de Anthropic** (`github.com/anthropics/skills`) en
-`~/.claude/skills/` (`C:\Users\Dell Computing\.claude\skills\`). Nivel **usuario** →
-activos en **todos los repos del workspace** sin copiarlos a cada uno. Fuente
-verificada (repo oficial) — cumple la allowlist de arriba.
-
-Set: `docx` · `xlsx` · `pptx` · `pdf` · `canvas-design` · `frontend-design` ·
-`brand-guidelines` · `theme-factory` · `algorithmic-art` · `web-artifacts-builder` ·
-`slack-gif-creator` · `doc-coauthoring` · `internal-comms` · `mcp-builder` ·
-`skill-creator` · `webapp-testing` · `academy-guide` · `discernment-nudge`.
-(`claude-api` se omitió — ya viene con Claude Code.)
-
-- **Invocar** — automático (Claude lo activa según su `description`) o explícito con
-  `/<nombre>` en el prompt (`/xlsx`, `/pdf`, …). Ver instalados: `ls ~/.claude/skills/`.
-- **Remover** (no están en git — config local, sin commit):
-  `rm -rf ~/.claude/skills/<nombre>` · lote completo:
-  `cd ~/.claude/skills && rm -rf docx xlsx pptx pdf canvas-design frontend-design brand-guidelines theme-factory algorithmic-art web-artifacts-builder slack-gif-creator doc-coauthoring internal-comms mcp-builder skill-creator webapp-testing academy-guide discernment-nudge`
-- `discernment-nudge` altera el comportamiento (añade preguntas de verificación tras
-  respuestas sustantivas) — bórralo solo si estorba.
-- Reinstalar: `git clone --depth 1 https://github.com/anthropics/skills.git` → copiar `skills/*/`.
+Esta es una regla del proyecto. Si usas `git commit` sin la firma, la herramienta de CI/CD rechazará el commit. Configurar:
+```bash
+git config commit.gpgsign false
+```
 
 ---
 
