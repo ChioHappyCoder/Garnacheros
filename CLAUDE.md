@@ -49,21 +49,31 @@ Si accidentalmente se expone un secreto → **Rotar inmediatamente en Clerk + Ne
 
 ## 🛠️ Setup del proyecto
 
+### Local
+
 ```bash
 # 1. Instalar dependencias
 cd frontend && npm install
 cd ../backend && npm install
 
 # 2. Configurar variables de entorno
-# backend/.env (ver .env.example)
-# frontend/.env.local (ver .env.example)
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 
-# 3. Levantar en desarrollo
+# 3. Llenar .env con valores reales (Neon, Clerk)
+
+# 4. Levantar en desarrollo (con Docker)
 docker-compose up --build
 
-# 4. Seedear datos (primera ejecución)
+# 5. Seedear datos (primera ejecución)
 cd backend && npm run seed
 ```
+
+**URLs en desarrollo:**
+- Frontend: http://localhost (via Nginx) o http://localhost:3000 (Next.js directo)
+- Backend: http://localhost:3001
+- API: http://localhost/api
+- Health: http://localhost/health
 
 ## 🔧 Stack específico
 
@@ -77,12 +87,35 @@ cd backend && npm run seed
 **No usar:** ORMs complejos (Prisma/Sequelize). SQL raw + tipos TypeScript.
 
 ### Frontend
-- **@clerk/clerk-react** — SignInButton, UserButton, hooks (useAuth, useUser)
+- **Next.js 14** — React framework con App Router (SSR/SSG)
+- **@clerk/nextjs** — Autenticación Clerk optimizada para Next.js
 - **axios** — HTTP client para llamadas a `/api`
-- **tailwindcss** — Estilos utilities-first (sin CSS modules)
-- **vite** — Build tool + dev server con hot reload
+- **tailwindcss** — Estilos utilities-first
+- **TypeScript 5.3** — ES2022 target
 
 **Paleta de colores Tailwind:** Naranjas (orange-*) y grises (gray-*) — tema comida callejera.
+
+#### Estructura de App Router
+```
+app/
+├── layout.tsx           # Root layout con ClerkProvider
+├── page.tsx             # Login page (redirect si está autenticado)
+├── health/
+│   └── page.tsx         # Health check de la API
+└── spots/
+    ├── page.tsx         # Lista de puestos (requiere auth)
+    └── [id]/
+        └── page.tsx     # Detalle de puesto (requiere auth)
+
+components/
+├── Header.tsx
+├── SpotsList.tsx
+├── SpotCard.tsx
+└── SpotDetail.tsx
+
+lib/
+└── api.ts               # Cliente HTTP + tipos
+```
 
 ### Database (Neon)
 - Schema: 2 tablas (`spots`, `reviews`)
@@ -229,6 +262,10 @@ SELECT * FROM reviews WHERE spot_id = 1;
 ```bash
 docker-compose down
 docker-compose up --build
+
+# Ver logs
+docker-compose logs -f app
+docker-compose logs -f api
 ```
 
 ### En VPS
@@ -236,6 +273,14 @@ docker-compose up --build
 ssh user@technoapps.agency
 cd Garnacheros
 git pull origin main
+
+# Copiar/actualizar .env con variables reales
+cat > .env << EOF
+DATABASE_URL=postgresql://...
+CLERK_SECRET_KEY=sk_live_...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+EOF
+
 docker-compose -f docker-compose.prod.yml up -d --build
 ```
 

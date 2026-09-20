@@ -15,9 +15,9 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-5+-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![Clerk Auth](https://img.shields.io/badge/Clerk-Authentication-6C63FF?logo=clerk&logoColor=white)](https://clerk.com)
 
@@ -70,32 +70,43 @@ Garnacheros/
 │   │   ├── middleware/
 │   │   │   └── auth.ts         # Validación JWT de Clerk
 │   │   ├── types.ts            # Extensión Express Request
-│   │   └── index.ts            # App principal
+│   │   └── index.ts            # App principal Express
 │   ├── Dockerfile              # Build multi-stage Node
 │   ├── tsconfig.json           # ES2022 target
 │   └── package.json
 │
 ├── 🎨 frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Header.tsx      # Nav + UserButton
-│   │   │   ├── SpotsList.tsx   # Grid con filtros
-│   │   │   ├── SpotCard.tsx    # Card individual
-│   │   │   └── SpotDetail.tsx  # Vista detalle + reseñas
-│   │   ├── api/
-│   │   │   └── client.ts       # Cliente axios + tipos
-│   │   ├── App.tsx             # Router principal
-│   │   └── index.css           # Tailwind globals
-│   ├── Dockerfile              # Build + Nginx multi-stage
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # Root layout + ClerkProvider
+│   │   ├── page.tsx            # Login page
+│   │   ├── health/
+│   │   │   └── page.tsx        # Health check API
+│   │   └── spots/
+│   │       ├── page.tsx        # Lista de puestos
+│   │       └── [id]/
+│   │           └── page.tsx    # Detalle de puesto
+│   ├── components/
+│   │   ├── Header.tsx          # Nav + UserButton
+│   │   ├── SpotsList.tsx       # Grid con filtros
+│   │   ├── SpotCard.tsx        # Card individual
+│   │   └── SpotDetail.tsx      # Vista detalle + reseñas
+│   ├── lib/
+│   │   └── api.ts              # Cliente axios + tipos
+│   ├── styles/
+│   │   └── globals.css         # Tailwind globals
+│   ├── public/                 # Assets estáticos
+│   ├── Dockerfile              # Build Next.js
 │   ├── nginx.conf              # Config reverse proxy
+│   ├── next.config.js
 │   ├── tailwind.config.js
-│   ├── vite.config.ts          # Proxy /api a backend
+│   ├── postcss.config.js
 │   └── package.json
 │
-├── 🐳 docker-compose.yml       # Dev (sin DB local)
+├── 🐳 docker-compose.yml       # Dev (3 servicios: api, app, web)
 ├── 🐳 docker-compose.prod.yml  # Prod (VPS-ready)
+├── CLAUDE.md                   # Guía de desarrollo
+├── .env.example                # Template variables
 ├── .gitignore
-├── .env.example
 └── README.md
 ```
 
@@ -142,9 +153,9 @@ docker-compose up --build
 
 | Servicio | URL | Descripción |
 |----------|-----|-------------|
-| **Frontend** | http://localhost | Interfaz SPA |
-| **Backend** | http://localhost:3001 | REST API |
-| **API Docs** | http://localhost:3001/health | Health check |
+| **Frontend** | http://localhost | Interfaz Next.js (via Nginx) |
+| **Backend** | http://localhost:3001 | REST API Express |
+| **Health** | http://localhost/health | Estado de los servicios |
 
 ### 4️⃣ Seedear datos iniciales
 
