@@ -143,6 +143,32 @@ lib/
 - Foreign keys con `ON DELETE CASCADE`
 - Migraciones en TypeScript (se corren en `seed.ts`)
 
+## 📊 Datos y Seeds
+
+### Puestos Iniciales
+Los 10 puestos iniciales se cargan desde `backend/src/db/seed.ts`:
+
+```bash
+cd backend
+npm run seed
+```
+
+**Distribución:**
+- 🏙️ **CDMX (5):** El Califa, El Tizoncito, Los Cocuyos, El Huequito, Orinoco
+- 🏘️ **Aguascalientes (5):** Lechón Rudy, Carnitas Mora, Las Planchitas, Pascualito, Taquería La Gloria
+
+### Fuentes de Datos (Futuro)
+1. **DENUE (INEGI):** Datos oficiales, gratuito, sin límite → Filtrar por giro "restaurantes/comida"
+2. **Google Places API:** Enriquecimiento (coords, horarios, fotos) → Consultas únicas en seed, NO en frontend
+
+### Agregar Puestos
+Editar `backend/src/db/seed.ts` y agregar a array `SPOTS`, luego:
+```bash
+npm run seed  # Inserta solo puestos nuevos (verifica por name + city)
+```
+
+---
+
 ## 📝 Convenciones del código
 
 ### TypeScript
