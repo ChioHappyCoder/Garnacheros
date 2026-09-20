@@ -193,12 +193,57 @@ cd backend
 npm run seed
 ```
 
-Esto cargará 10 puestos reales:
-- 🏪 El Califa de León (CDMX) ⭐ Estrella Michelin
-- 🏪 Lechón Rudy (Aguascalientes)
-- 🏪 Carnitas Mora (Aguascalientes)
-- 🏪 Las Planchitas (Aguascalientes)
-- ...y 6 más
+## 📊 Fuentes de Datos
+
+### Datos Iniciales (10 Puestos)
+
+Los datos iniciales se cargan desde `backend/src/db/seed.ts` y contienen puestos reales documentados:
+
+| Ciudad | Puestos | Ejemplos |
+|--------|---------|----------|
+| **CDMX** | 5 | El Califa de León, El Tizoncito, Los Cocuyos, El Huequito, Orinoco |
+| **Aguascalientes** | 5 | Lechón Rudy, Carnitas Mora, Las Planchitas, Lechón Pascualito, Taquería La Gloria |
+
+### Fuentes de Datos (Futuro)
+
+Los datos pueden enriquecerse desde:
+
+1. **DENUE (INEGI)** — Base de datos oficial de negocios registrados en México
+   - ✅ Gratuito, sin límite de consultas
+   - ✅ Datos verificados por gobierno
+   - 📍 Filtrado por giro: "restaurantes con servicio limitado"
+
+2. **Google Places API** — Enriquecimiento de coordenadas, horarios, fotos
+   - ⚠️ API pagada (pero crédito gratuito inicial ~$200 USD/mes)
+   - 📍 Consultas únicas en seed script, NO en cada visita de usuario
+   - 🔒 Nunca exponer API key en frontend
+
+### Agregar Nuevos Puestos
+
+**Opción 1: Editar `seed.ts` directamente**
+```typescript
+// backend/src/db/seed.ts
+const SPOTS = [
+  {
+    name: "Mi Puesto",
+    city: "CDMX",
+    address: "Calle X 123",
+    colonia: "Colonia",
+    food_type: "Tacos",
+    hours: "Mon-Sun 8am-11pm",
+    description: "Descripción del puesto",
+    image_url: "https://...",
+  },
+  // ... más puestos
+];
+```
+
+**Opción 2: Script de importación desde DENUE/Google Places**
+```bash
+# En desarrollo futuro:
+npm run import-denue --city CDMX --food-type tacos
+npm run import-places --location "Aguascalientes"
+```
 
 ---
 
