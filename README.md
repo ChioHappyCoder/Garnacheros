@@ -370,11 +370,13 @@ git commit -m "docs: Actualización de documentación"
 
 ## 📚 Recursos
 
+- [Next.js Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev)
-- [Express.js Guide](https://expressjs.com)
-- [Neon PostgreSQL](https://neon.tech)
+- [Nest.js Documentation](https://docs.nestjs.com)
+- [PostgreSQL 16 Docs](https://www.postgresql.org/docs/16)
+- [Neon PostgreSQL](https://neon.tech/docs)
 - [Clerk Authentication](https://clerk.com/docs)
-- [Docker Best Practices](https://docs.docker.com)
+- [Docker Best Practices](https://docs.docker.com/develop/dev-best-practices)
 - [Tailwind CSS](https://tailwindcss.com)
 
 ---
