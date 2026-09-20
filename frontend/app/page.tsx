@@ -1,4 +1,4 @@
-import { SignInButton } from '@clerk/nextjs';
+import { SignIn } from '@clerk/nextjs';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
@@ -16,13 +16,7 @@ export default async function LoginPage() {
           <h1 className="text-5xl font-bold text-orange-600 mb-2">🌮 Garnacheros</h1>
           <p className="text-gray-600">Califica y descubre los mejores puestos de comida callejera</p>
         </div>
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <SignInButton redirectUrl="/spots">
-            <button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg transition">
-              Iniciar sesión
-            </button>
-          </SignInButton>
-        </div>
+        <SignIn afterSignInUrl="/spots" />
       </div>
     </div>
   );
