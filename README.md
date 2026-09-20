@@ -23,7 +23,7 @@
 
 ### Backend
 [![Node.js](https://img.shields.io/badge/Node.js-22+-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
-[![Express.js](https://img.shields.io/badge/Express.js-4.18-000000?logo=express&logoColor=white)](https://expressjs.com)
+[![Nest.js](https://img.shields.io/badge/Nest.js-10.3-EA2845?logo=nestjs&logoColor=white)](https://nestjs.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 
 ### Database & Auth
@@ -126,13 +126,14 @@ Garnacheros/
 DATABASE_URL=postgresql://user:password@host:5432/garnacheros
 CLERK_SECRET_KEY=sk_test_xxxxx
 PORT=3001
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:3000
 ```
 
 **Crear `frontend/.env.local`:**
 ```bash
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
-VITE_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+CLERK_SECRET_KEY=sk_test_xxxxx
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
 ### 2️⃣ Instalar dependencias

@@ -39,11 +39,11 @@ Si accidentalmente se expone un secreto → **Rotar inmediatamente en Clerk + Ne
 
 | Aspecto | Detalles |
 |--------|----------|
-| **Frontend** | React 18 + Vite + TypeScript 5.3 + Tailwind CSS |
-| **Backend** | Express 4.18 + TypeScript 5.3 + Node.js 22 |
+| **Frontend** | Next.js 14 + React 18 + TypeScript 5.3 + Tailwind CSS |
+| **Backend** | Nest.js 10.3 + TypeScript 5.3 + Node.js 22 |
 | **Database** | Neon PostgreSQL (serverless) |
 | **Auth** | Clerk (OAuth + Email/Password) |
-| **Deploy** | Docker + Nginx + Let's Encrypt |
+| **Deploy** | Docker Compose + Nginx + Let's Encrypt |
 | **Dominio** | https://garnacheros.technoapps.agency |
 | **Repo público** | https://github.com/ChioHappyCoder/Garnacheros |
 
@@ -78,11 +78,13 @@ cd backend && npm run seed
 ## 🔧 Stack específico
 
 ### Backend
-- **express.js** — Framework HTTP minimalista + router REST
-- **@clerk/clerk-sdk-node** — Validación JWT de Clerk
+- **@nestjs/core** — Framework fullstack con inyección de dependencias
+- **@nestjs/common** — Decoradores, Guards, Pipes, Modules
+- **@clerk/clerk-sdk-node** — Validación JWT de Clerk en guards
 - **pg** — Pool de conexiones a Neon
-- **cors** — Middleware CORS configurado por dominio
 - **dotenv** — Variables de entorno
+
+**Arquitectura:** Modules → Controllers → Services → Database Provider (patrón Nest.js)
 
 **No usar:** ORMs complejos (Prisma/Sequelize). SQL raw + tipos TypeScript.
 
@@ -90,10 +92,12 @@ cd backend && npm run seed
 - **Next.js 14** — React framework con App Router (SSR/SSG)
 - **@clerk/nextjs** — Autenticación Clerk optimizada para Next.js
 - **axios** — HTTP client para llamadas a `/api`
-- **tailwindcss** — Estilos utilities-first
-- **TypeScript 5.3** — ES2022 target
+- **tailwindcss 3.3** — Estilos utilities-first
+- **TypeScript 5.3** — ES2022 target, strict mode
 
-**Paleta de colores Tailwind:** Naranjas (orange-*) y grises (gray-*) — tema comida callejera.
+**Paleta de colores:** Naranjas (orange-*) y grises (gray-*) — tema comida callejera.
+
+**Variables de entorno:** Solo `NEXT_PUBLIC_*` se pasan al frontend. Backend usa `CLERK_SECRET_KEY`.
 
 #### Estructura de App Router
 ```
@@ -158,11 +162,12 @@ git commit -m "perf: Optimización"
    DATABASE_URL=postgresql://user:password@host:5432/garnacheros
    CLERK_SECRET_KEY=sk_test_xxxxx
    PORT=3001
-   FRONTEND_URL=http://localhost:5173
+   FRONTEND_URL=http://localhost:3000
    
    # frontend/.env.local
-   VITE_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
-   VITE_API_URL=http://localhost:3001/api
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
+   CLERK_SECRET_KEY=sk_test_xxxxx
+   NEXT_PUBLIC_API_URL=http://localhost:3001/api
    ```
 
 2. **Backend** — dotenv carga automáticamente en `src/index.ts`:
@@ -173,10 +178,10 @@ git commit -m "perf: Optimización"
    const dbUrl = process.env.DATABASE_URL; // ✅ BIEN
    ```
 
-3. **Frontend** — Vite carga automáticamente variables `VITE_*`:
+3. **Frontend** — Next.js carga automáticamente variables `NEXT_PUBLIC_*`:
    ```ts
-   const apiUrl = import.meta.env.VITE_API_URL; // ✅ BIEN (Vite)
-   // NO usar process.env en frontend (no existe en el browser)
+   const apiUrl = process.env.NEXT_PUBLIC_API_URL; // ✅ BIEN (Next.js)
+   // Variables sin NEXT_PUBLIC_ solo disponibles en servidor
    ```
 
 ### Distribución de secretos
@@ -185,7 +190,7 @@ git commit -m "perf: Optimización"
 |---------|---------|------------------|
 | `DATABASE_URL` | `backend/.env` | Configurar en VPS vía SSH |
 | `CLERK_SECRET_KEY` | `backend/.env` | Solo en VPS, nunca en GitHub |
-| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env.local` | Puede estar en GitHub Actions (seguro, no es secreto) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Env var | Puede estar en GitHub Actions (público, no secreto) |
 
 **Nunca hacer:**
 ```ts
@@ -289,10 +294,10 @@ docker-compose -f docker-compose.prod.yml up -d --build
 | Error | Causa | Solución |
 |-------|-------|----------|
 | `DATABASE_URL` undefined | `.env` no configurado | Copiar `.env.example` → `.env` + llenar valores |
-| `VITE_CLERK_PUBLISHABLE_KEY` undefined | `VITE_*` vars no loadean | Solo VITE_* se pasan al frontend. Verificar en vite.config.ts |
-| 401 en reseñas | Token Clerk inválido | Verificar que `getToken()` se llama en frontend antes de POST |
-| 403 al eliminar reseña | No eres el autor | Backend valida `req.auth.userId` contra `review.user_id` |
-| Nginx 502 | Backend caído | `docker-compose logs api` → revisar errors |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` undefined | Vars no cargadas | Solo `NEXT_PUBLIC_*` llegan al frontend. Reiniciar `npm run dev` |
+| 401 en reseñas | Token Clerk inválido | ClerkAuthGuard valida el JWT. Verificar token en header |
+| 403 al eliminar reseña | No eres el autor | Guard valida `req.auth.userId` contra `review.user_id` |
+| Error de módulo Nest.js | Importación circular | Verificar que DatabaseModule se importe en módulos que lo usan |
 
 ## 🚫 Prohibido en Garnacheros
 

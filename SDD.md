@@ -1,8 +1,8 @@
 # Software Design Document (SDD)
 ## Garnacheros — Plataforma de Calificación y Reseñas
 
-**Versión:** 1.0  
-**Fecha:** 2026-09-20  
+**Versión:** 2.0  
+**Fecha:** 2026-09-20 (Nest.js Refactor)  
 **Proyecto:** Garnacheros — Califica y descubre puestos de comida callejera  
 **Publicado en:** https://github.com/ChioHappyCoder/Garnacheros  
 
@@ -62,13 +62,13 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
 ### Backend
 | Componente | Tecnología | Versión | Justificación |
 |------------|-----------|---------|---------------|
-| Framework | Express.js | 4.18 | Minimalista, flexible, rápido |
-| Lenguaje | TypeScript | 5.3 | Tipado, menos errores, mejor mantenibilidad |
+| Framework | Nest.js | 10.3 | Arquitectura modular, inyección de dependencias, TypeScript first |
+| Lenguaje | TypeScript | 5.3 | Tipado estricto, decoradores, mejor mantenibilidad |
 | Base de Datos | PostgreSQL (Neon) | Serverless | Managed, escalable, sin DevOps |
 | Driver SQL | pg | 8.23 | Queries parameterizadas, previene SQL injection |
-| Autenticación | @clerk/clerk-sdk-node | 4.13 | Validación JWT, middleware middleware |
-| CORS | cors | 2.8 | Control de dominios permitidos |
+| Autenticación | @clerk/clerk-sdk-node | 4.13 | Validación JWT en guards, middleware nativo |
 | Variables | dotenv | 18.0 | Carga segura de secretos desde .env |
+| Runtime | Node.js | 22 | LTS, mejor rendimiento, soporte CommonJS/ESM |
 
 ### DevOps
 | Componente | Tecnología | Versión | Justificación |
@@ -96,11 +96,11 @@ Usuario → Login (Clerk OAuth) → Ver lista de puestos
     │  • Proxea /api/* a backend│
     └────┬──────────┬───────────┘
          │          │
-    ┌────▼──┐  ┌───▼──────┐
-    │Next.js│  │ Express  │
-    │  App  │  │ Backend  │ (puerto 3001)
-    │(3000) │  │          │
-    └──┬────┘  └────┬─────┘
+    ┌────▼──┐  ┌───▼──────────────┐
+    │Next.js│  │   Nest.js API    │
+    │  App  │  │  (Modules +      │
+    │(3000) │  │   Controllers)   │ (puerto 3001)
+    └──┬────┘  └────┬──────────────┘
        │            │
        │     ┌──────▼────────────┐
        │     │ Neon PostgreSQL   │
@@ -322,11 +322,74 @@ Authorization: Bearer {CLERK_JWT_TOKEN}
 
 ### Seguridad
 - ✅ Tokens JWT firmados por Clerk (imposible falsificar)
-- ✅ Validación JWT en middleware backend (req.auth?.userId)
+- ✅ Validación JWT en Guards de Nest.js (ClerkAuthGuard)
 - ✅ CORS configurado solo para dominios permitidos
 - ✅ SQL parameterizado (pg driver previene SQL injection)
 - ✅ Secretos en .env (nunca en código)
 - ✅ HTTPS/TLS en producción (Let's Encrypt)
+- ✅ Tipado estricto en TypeScript (no `any` permitidos)
+
+---
+
+## Arquitectura del Backend (Nest.js)
+
+### Estructura de Módulos
+
+Nest.js organiza el código en **módulos** con inyección de dependencias:
+
+```
+src/
+├── main.ts                    # Punto de entrada, bootstrap
+├── app.module.ts              # Módulo raíz, importa otros módulos
+├── app.controller.ts          # Health check controller
+│
+├── database/
+│   ├── database.module.ts     # Módulo de DB
+│   └── database.provider.ts   # Proveedor Pool PostgreSQL
+│
+├── auth/
+│   └── clerk.guard.ts         # Guard para autenticación JWT
+│
+├── spots/
+│   ├── spots.module.ts        # Módulo de spots
+│   ├── spots.controller.ts    # Rutas GET /api/spots
+│   └── spots.service.ts       # Lógica de negocios
+│
+├── reviews/
+│   ├── reviews.module.ts      # Módulo de reviews
+│   ├── reviews.controller.ts  # Rutas POST/DELETE /api/reviews
+│   └── reviews.service.ts     # Lógica de negocios
+│
+├── common/
+│   └── types.ts               # Interfaces compartidas
+│
+└── db/
+    ├── db.ts                  # Pool de conexión
+    ├── schema.ts              # Migraciones SQL
+    └── seed.ts                # Data seeding
+```
+
+### Flujo de Dependencias
+
+1. **AppModule** importa DatabaseModule, SpotsModule, ReviewsModule
+2. **DatabaseModule** proporciona Pool PostgreSQL (DATABASE_CONNECTION)
+3. **SpotsModule** inyecta DatabaseModule para acceder a la base de datos
+4. **ReviewsModule** inyecta DatabaseModule + ClerkAuthGuard para autorización
+5. **Controllers** manejan rutas y usan services
+6. **Services** manejan lógica de negocio y queries SQL
+
+### Patrón de Autorización
+
+```typescript
+@Controller('api/reviews')
+export class ReviewsController {
+  @Post(':spotId')
+  @UseGuards(ClerkAuthGuard)  // Guard valida JWT
+  async create(@Request() req: any) {
+    // req.auth.userId está garantizado por el guard
+  }
+}
+```
 
 ---
 
