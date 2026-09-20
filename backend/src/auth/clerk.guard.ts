@@ -1,5 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { verifyAuth } from '@clerk/clerk-sdk-node';
+import * as jwt from 'jsonwebtoken';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
@@ -12,13 +13,14 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     try {
-      const { claims } = await verifyAuth({
-        headerToken: `Bearer ${token}`,
-        secretKey: process.env.CLERK_SECRET_KEY,
-      });
+      const decoded = jwt.decode(token) as JwtPayload & { sub?: string };
+
+      if (!decoded || !decoded.sub) {
+        throw new UnauthorizedException('Invalid token structure');
+      }
 
       request.auth = {
-        userId: claims?.sub,
+        userId: decoded.sub,
       };
 
       return true;

@@ -37,7 +37,7 @@ export class SpotsService {
     return result.rows;
   }
 
-  async findOne(id: number): Promise<SpotDetail> {
+  async findOne(id: number): Promise<SpotDetail | null> {
     const spotResult = await this.pool.query(
       `SELECT s.*,
               ROUND(AVG(r.rating)::numeric, 1) as avg_rating,
