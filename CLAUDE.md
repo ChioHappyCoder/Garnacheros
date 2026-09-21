@@ -107,6 +107,8 @@ psql -h localhost -U garnacheros -d garnacheros
 
 **Variables de entorno:** Solo `NEXT_PUBLIC_*` se pasan al frontend. Backend usa `CLERK_SECRET_KEY`.
 
+⚠️ **En Docker, `NEXT_PUBLIC_*` deben pasarse como `build.args`, no solo `environment`** — Next.js las inyecta en el bundle del cliente durante `next build`, no en runtime. Si solo se pasan como env var del contenedor, quedan compiladas con su valor default y el fetch al backend falla silenciosamente. Ver `frontend/Dockerfile` (`ARG`/`ENV`) y `docker-compose.yml` (`build.args`).
+
 #### Estructura de App Router
 ```
 app/
@@ -164,8 +166,14 @@ npm run seed
 ### Agregar Puestos
 Editar `backend/src/db/seed.ts` y agregar a array `SPOTS`, luego:
 ```bash
-npm run seed  # Inserta solo puestos nuevos (verifica por name + city)
+npm run seed  # Inserta puestos nuevos (verifica por name + city) y actualiza image_url de los existentes
 ```
+
+⚠️ **Antes de agregar una `image_url` externa (Unsplash, etc.), verificar que responde 200:**
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" "https://images.unsplash.com/photo-XXXX?w=400&h=300&fit=crop"
+```
+Los IDs de fotos de terceros expiran o se borran — nunca asumir que una URL "de memoria" sigue viva.
 
 ---
 
@@ -398,6 +406,10 @@ npm run test:e2e:ui
 | 403 al eliminar reseña | No eres el autor | Guard valida `req.auth.userId` contra `review.user_id` |
 | Error de módulo Nest.js | Importación circular | Verificar que DatabaseModule se importe en módulos que lo usan |
 | Tables don't exist | Seed no corrió | Ejecutar `npm run seed` tras `docker-compose up` |
+| Frontend no muestra datos (sin error visible) | `NEXT_PUBLIC_*` solo en runtime del contenedor, no en build | Pasarlas como `build.args` en `docker-compose.yml` y `ARG`/`ENV` en `frontend/Dockerfile`, luego reconstruir imagen |
+| Frontend no muestra datos al entrar por `:5173` directo | CORS del backend solo permite el origen de nginx (`:80`) | `FRONTEND_URL` en CORS debe incluir también `http://localhost:5173` en desarrollo |
+| `TypeError: x.toFixed is not a function` en rating/reviews | `AVG()`/`COUNT()` de Postgres llegan como `string` vía `pg`, no `number` | Castear con `Number(valor) || 0` antes de usar métodos numéricos |
+| Imágenes de puestos rotas (404) | URLs de Unsplash inválidas/expiradas en el seed | Verificar cada URL con `curl -o /dev/null -w "%{http_code}"` antes de usarla; correr `npm run seed` de nuevo (ya actualiza `image_url` de existentes) |
 
 ## 🚫 Prohibido en Garnacheros
 

@@ -8,8 +8,8 @@ interface SpotCardProps {
 }
 
 export default function SpotCard({ spot }: SpotCardProps) {
-  const rating = spot.avg_rating || 0;
-  const reviewCount = spot.review_count || 0;
+  const rating = Number(spot.avg_rating) || 0;
+  const reviewCount = Number(spot.review_count) || 0;
 
   return (
     <Link href={`/spots/${spot.id}`}>

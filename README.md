@@ -134,19 +134,19 @@ Garnacheros/
 
 ### 1️⃣ Configurar variables de entorno
 
-**Crear `backend/.env`:**
-```bash
-CLERK_SECRET_KEY=sk_test_xxxxx
-PORT=3001
-FRONTEND_URL=http://localhost:3000
-# DATABASE_URL se genera automáticamente en docker-compose.yml
-```
-
-**Crear `frontend/.env.local`:**
+**Crear `.env` en la raíz del proyecto** (usado por `docker-compose.yml` para `api` y `app`):
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
 CLERK_SECRET_KEY=sk_test_xxxxx
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+```
+⚠️ Estas claves se obtienen gratis en [dashboard.clerk.com](https://dashboard.clerk.com). `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` se usa como **build arg** de la imagen del frontend — si cambias su valor, hay que reconstruir con `docker-compose up -d --build app`, no basta con reiniciar.
+
+**Crear `backend/.env`** (solo necesario si corres el backend fuera de Docker, ej. para `npm run seed` desde el host):
+```bash
+DATABASE_URL=postgresql://garnacheros:garnacheros_dev_password@localhost:5432/garnacheros
+CLERK_SECRET_KEY=sk_test_xxxxx
+PORT=3000
+FRONTEND_URL=http://localhost
 ```
 
 ### 2️⃣ Instalar dependencias
@@ -167,10 +167,13 @@ docker-compose up --build
 
 | Servicio | URL | Descripción |
 |----------|-----|-------------|
-| **Frontend** | http://localhost:5173 | Next.js 14 (modo desarrollo - como Vite) |
+| **Frontend (directo)** | http://localhost:5173 | Next.js 14 |
+| **App vía Nginx** | http://localhost | Frontend + API proxeados por nginx (puerto 80) |
 | **Backend API** | http://localhost:3000 | REST API Nest.js |
 | **Health** | http://localhost:3000/health | Estado del backend |
 | **Database** | localhost:5432 | PostgreSQL 16 |
+
+Los 4 contenedores (`db`, `api`, `app`, `web`) deben verse `healthy` en `docker-compose ps` (y en Docker Desktop) antes de continuar.
 
 ### 4️⃣ Conectar a la Base de Datos Local
 
@@ -244,6 +247,22 @@ const SPOTS = [
 npm run import-denue --city CDMX --food-type tacos
 npm run import-places --location "Aguascalientes"
 ```
+
+---
+
+## 🧪 Tests E2E (Playwright)
+
+Suite de regresión que cubre health checks, CRUD de puestos/reseñas y auth:
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+npm run test:e2e
+```
+
+Requiere los 4 contenedores corriendo (`docker-compose up -d`) y datos sembrados (`npm run seed`). Ver [`tests/e2e/`](tests/e2e/) y [`playwright.config.ts`](playwright.config.ts).
+
+Para el historial de bugs encontrados y corregidos durante el desarrollo (gotchas de Docker, CORS, encoding, etc.), ver [`SDD.md`](SDD.md).
 
 ---
 
@@ -370,9 +389,9 @@ git commit -m "docs: Actualización de documentación"
 
 ## 📚 Recursos
 
-- [Next.js Documentation](https://nextjs.org/docs)
+- [NextJS Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev)
-- [Nest.js Documentation](https://docs.nestjs.com)
+- [NestJS Documentation](https://docs.nestjs.com)
 - [PostgreSQL 16 Docs](https://www.postgresql.org/docs/16)
 - [Neon PostgreSQL](https://neon.tech/docs)
 - [Clerk Authentication](https://clerk.com/docs)

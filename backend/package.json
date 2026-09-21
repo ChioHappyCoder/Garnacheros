@@ -1,12 +1,11 @@
 {
   "name": "garnacheros-backend",
   "version": "1.0.0",
-  "type": "module",
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "seed": "ts-node --esm src/db/seed.ts"
+    "seed": "ts-node src/db/seed.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",

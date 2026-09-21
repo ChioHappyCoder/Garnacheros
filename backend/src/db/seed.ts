@@ -1,5 +1,5 @@
-import { query, initDb } from "./db.js";
-import { createTables } from "./schema.js";
+import { query, initDb } from "./db";
+import { createTables } from "./schema";
 
 const SPOTS = [
   {
@@ -10,7 +10,7 @@ const SPOTS = [
     food_type: "Tacos de Suadero",
     hours: "Mon-Sun 8am-11pm",
     description: "Taquería legendaria con 20+ años de trayectoria, conocida por sus tacos de suadero. Estrella Michelin.",
-    image_url: "https://images.unsplash.com/photo-1620384677591-d4e27e1bff8d?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1613514785940-daed07799d9b?w=400&h=300&fit=crop",
   },
   {
     name: "El Tizoncito",
@@ -20,7 +20,7 @@ const SPOTS = [
     food_type: "Tacos al Pastor",
     hours: "Mon-Sat 12pm-12am",
     description: "Tacos al pastor tradicionales con ingredientes de calidad.",
-    image_url: "https://images.unsplash.com/photo-1565050902556-49d882e12b04?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400&h=300&fit=crop",
   },
   {
     name: "Los Cocuyos",
@@ -30,7 +30,7 @@ const SPOTS = [
     food_type: "Carnitas",
     hours: "Tue-Sun 11am-8pm",
     description: "Carnitas de cerdo recién hecha, acompañadas de tortillas calientitas.",
-    image_url: "https://images.unsplash.com/photo-1628840042765-356cda07f4ee?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?w=400&h=300&fit=crop",
   },
   {
     name: "El Huequito",
@@ -40,7 +40,7 @@ const SPOTS = [
     food_type: "Tacos de Suadero",
     hours: "Mon-Sun 7am-10pm",
     description: "Puesto icónico en el Centro Histórico, especialista en suadero.",
-    image_url: "https://images.unsplash.com/photo-1599599810694-b5ac4dd64b11?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1611250188496-e966043a0629?w=400&h=300&fit=crop",
   },
   {
     name: "Lechón Rudy",
@@ -60,7 +60,7 @@ const SPOTS = [
     food_type: "Carnitas",
     hours: "Tue-Sun 9am-8pm",
     description: "Carnitas artesanales cocinadas al adobe desde hace 30 años.",
-    image_url: "https://images.unsplash.com/photo-1618164436241-4473940571db?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&h=300&fit=crop",
   },
   {
     name: "Las Planchitas",
@@ -70,7 +70,7 @@ const SPOTS = [
     food_type: "Quesadillas",
     hours: "Mon-Sun 7am-4pm",
     description: "Quesadillas de queso, flor de calabaza y huitlacoche, recién salidas de la plancha.",
-    image_url: "https://images.unsplash.com/photo-1604914175585-fe32a42e8b81?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?w=400&h=300&fit=crop",
   },
   {
     name: "Lechón Pascualito",
@@ -80,7 +80,7 @@ const SPOTS = [
     food_type: "Lechón",
     hours: "Sat-Sun 10am-6pm",
     description: "Lechón criollo de fin de semana, receta tradicional.",
-    image_url: "https://images.unsplash.com/photo-1526069089607-490d3f3e2d4f?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1624300629298-e9de39c13be5?w=400&h=300&fit=crop",
   },
   {
     name: "Taquería La Gloria",
@@ -90,7 +90,7 @@ const SPOTS = [
     food_type: "Tacos de Barbacoa",
     hours: "Mon-Sun 6am-10pm",
     description: "Tacos de barbacoa de res cocinada en horno de tierra.",
-    image_url: "https://images.unsplash.com/photo-1565050902556-49d882e12b04?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1607330289024-1535c6b4e1c1?w=400&h=300&fit=crop",
   },
   {
     name: "Orinoco",
@@ -100,7 +100,7 @@ const SPOTS = [
     food_type: "Tacos Árabes",
     hours: "Mon-Sat 12pm-11pm",
     description: "Famosos tacos árabes con todos los condimentos.",
-    image_url: "https://images.unsplash.com/photo-1555939594-58d7cb561404?w=400&h=300&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1608835291093-394b0c943a75?w=400&h=300&fit=crop",
   },
 ];
 
@@ -132,6 +132,12 @@ async function seed() {
           ]
         );
         console.log(`✓ Seeded: ${spot.name} (${spot.city})`);
+      } else {
+        await query(`UPDATE spots SET image_url = $1 WHERE id = $2`, [
+          spot.image_url,
+          existing.rows[0].id,
+        ]);
+        console.log(`↻ Actualizada imagen: ${spot.name} (${spot.city})`);
       }
     }
 

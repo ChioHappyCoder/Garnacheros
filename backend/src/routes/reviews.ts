@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { query } from "../db/db.js";
-import { requireAuth } from "../middleware/auth.js";
+import { query } from "../db/db";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 

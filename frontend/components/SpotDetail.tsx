@@ -13,7 +13,7 @@ export default function SpotDetail({ spotId }: SpotDetailProps) {
   const { getToken } = useAuth();
   const [spot, setSpot] = useState<(Spot & { reviews: Review[] }) | null>(null);
   const [loading, setLoading] = useState(false);
-  const [rating, setRating] = useState(5);
+  const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,12 +28,13 @@ export default function SpotDetail({ spotId }: SpotDetailProps) {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (rating < 1) return;
     setSubmitting(true);
     try {
       const token = await getToken();
       await apiClient.createReview(spotId, rating, comment, token || undefined);
       setComment('');
-      setRating(5);
+      setRating(0);
       const updated = await apiClient.getSpot(spotId);
       setSpot(updated);
     } catch (error) {
@@ -120,9 +121,9 @@ export default function SpotDetail({ spotId }: SpotDetailProps) {
         <div className="flex items-center gap-2 mb-6">
           <span className="text-yellow-500 text-2xl">⭐</span>
           <span className="text-2xl font-bold text-gray-800">
-            {(spot.avg_rating || 0).toFixed(1)}
+            {(Number(spot.avg_rating) || 0).toFixed(1)}
           </span>
-          <span className="text-gray-600">({spot.review_count || 0} reseñas)</span>
+          <span className="text-gray-600">({Number(spot.review_count) || 0} reseñas)</span>
         </div>
       </div>
 
@@ -136,7 +137,7 @@ export default function SpotDetail({ spotId }: SpotDetailProps) {
                 <button
                   key={star}
                   type="button"
-                  onClick={() => setRating(star)}
+                  onClick={() => setRating(star === rating ? 0 : star)}
                   className={`text-3xl transition ${
                     star <= rating ? 'text-yellow-500' : 'text-gray-300'
                   }`}
@@ -160,10 +161,10 @@ export default function SpotDetail({ spotId }: SpotDetailProps) {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || rating < 1}
             className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white font-bold py-2 rounded-lg transition"
           >
-            {submitting ? 'Enviando...' : 'Enviar reseña'}
+            {submitting ? 'Enviando...' : rating < 1 ? 'Selecciona una calificación' : 'Enviar reseña'}
           </button>
         </form>
       </div>

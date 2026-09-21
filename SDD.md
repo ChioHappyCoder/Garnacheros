@@ -884,6 +884,213 @@ app.enableCors({
 
 ---
 
+### 8. Módulo ESM vs CommonJS en Backend (fix incompleto corregido)
+
+**Problema:** Un fix anterior cambió `tsconfig.json` de `"module": "commonjs"` a `"module": "esnext"` para resolver `Cannot find module '/app/dist/main.js'`. El build (`nest build`) pasaba sin errores, pero en runtime fallaba con `ERR_MODULE_NOT_FOUND: Cannot find module '/app/dist/app.module'`.
+
+**Causa raíz real:** `backend/package.json` tenía `"type": "module"`, lo cual hace que Node.js trate los `.js` compilados como ES Modules nativos. Node ESM **exige extensión `.js` explícita** en imports relativos (`./app.module.js`), pero el código fuente usa imports sin extensión (`./app.module`), válidos solo para resolución CommonJS/Node clásica. TypeScript compilando a `esnext` NO agrega automáticamente las extensiones `.js` a los imports — por eso `tsc`/`nest build` compilaba sin error pero Node fallaba al ejecutar.
+
+**Solución (revertir completamente a CommonJS, no parchear ESM):**
+- ✅ `backend/package.json`: remover `"type": "module"` por completo
+- ✅ `backend/tsconfig.json`: `"module": "commonjs"` (no `"esnext"`)
+- ✅ `backend/package.json` script `seed`: `ts-node src/db/seed.ts` (sin flag `--esm`)
+- ✅ Verificado con `grep` que no existe `import.meta` ni top-level `await` en `backend/src/**/*.ts` antes de revertir, confirmando que CommonJS es seguro
+
+**Archivos:** [backend/package.json](backend/package.json), [backend/tsconfig.json](backend/tsconfig.json)
+
+**Guard:** Test E2E de health check falla si el contenedor `api` no llega a estado `healthy` — un `ERR_MODULE_NOT_FOUND` impide que el proceso arranque y el healthcheck nunca pasa
+
+**Lección:** Nest.js está diseñado para CommonJS por defecto. Migrar a ESM requiere agregar extensiones `.js` a TODOS los imports relativos del código fuente — no es un cambio de una sola línea en `tsconfig.json`. Si no hay una razón de peso para usar ESM, quedarse en CommonJS es la opción correcta y más simple.
+
+---
+
+### 9. Volumen Docker sobrescribe `dist` compilado dentro de la imagen
+
+**Problema:** `docker-compose.yml` montaba `./backend/dist:/app/dist` como bind mount en el servicio `api`. Esto sobrescribía en runtime el `dist` ya compilado dentro de la imagen con el `dist` local del host (vacío o desactualizado), causando `Cannot find module '/app/dist/main.js'` **incluso cuando la imagen sí contenía el archivo** (verificado con `docker run --rm garnacheros-api ls dist`).
+
+**Solución:**
+- ✅ Remover los bind mounts `./backend/src:/app/src` y `./backend/dist:/app/dist` del servicio `api`
+- ✅ Remover por el mismo motivo los bind mounts de `./frontend/app`, `./frontend/components`, `./frontend/lib` del servicio `app` (podrían sobrescribir el build `.next` de producción de forma análoga)
+
+**Archivo:** [docker-compose.yml](docker-compose.yml)
+
+**Guard:** Test E2E de health check falla si `api`/`app` no llegan a `healthy`
+
+**Lección:** Nunca montar como bind mount un directorio de build output (`dist`, `.next`, `build`) en un contenedor que corre la versión compilada/de producción (no hot-reload). Esos mounts son solo para desarrollo con watch mode; en un `docker-compose.yml` que hace `npm start` sobre artefactos ya compilados, sobran y son peligrosos.
+
+---
+
+### 10. Healthcheck con `curl` falla en `node:22-alpine`
+
+**Problema:** El healthcheck de `api` usaba `["CMD", "curl", "-f", "http://localhost:3000/health"]`, pero `curl` no está instalado en la imagen base `node:22-alpine` (solo `wget` está disponible de forma confiable).
+
+**Solución:**
+- ✅ Cambiar a `["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]`
+- ✅ Este patrón ya se usaba correctamente en los healthchecks de `app` y `web`; solo faltaba aplicarlo también a `api`
+
+**Archivo:** [docker-compose.yml](docker-compose.yml)
+
+**Guard:** `docker-compose ps` debe mostrar `(healthy)` para los 4 servicios
+
+---
+
+### 11. Nginx upstream apuntando a puertos/servicios incorrectos
+
+**Problema:** `frontend/nginx.conf` definía `upstream express_api { server api:3001; }` y `upstream next_app { server app:3000; }`, pero el backend corre internamente en el puerto 3000 (no 3001) y el frontend Next.js corría en el puerto 3000 también (mismatch con el mapeo `5173:5173` de docker-compose y con el healthcheck que pega a `localhost:5173`). Nginx fallaba al arrancar: `host not found in upstream "api:3001"` y el contenedor `web` quedaba en loop de restart.
+
+**Solución:**
+- ✅ `nginx.conf`: `upstream express_api { server api:3000; }`
+- ✅ `nginx.conf`: `upstream next_app { server app:5173; }`
+- ✅ `frontend/package.json`: scripts `dev`/`start` cambiados de `-p 3000` a `-p 5173` para que el puerto interno del proceso Next.js coincida con el mapeo de puertos de docker-compose y con nginx
+- ✅ `frontend/Dockerfile`: `EXPOSE 5173` (antes `EXPOSE 3000`)
+
+**Archivos:** [frontend/nginx.conf](frontend/nginx.conf), [frontend/package.json](frontend/package.json), [frontend/Dockerfile](frontend/Dockerfile)
+
+**Guard:** Test E2E de health check contra `http://localhost/` (vía nginx) falla si hay mismatch de puertos
+
+**Lección:** Cuando un puerto se define en varios lugares (Dockerfile `EXPOSE`, script `start` de la app, `ports:` de compose, healthcheck, y `nginx.conf` upstream), un solo lugar desalineado rompe toda la cadena. Verificar los 5 puntos juntos al cambiar cualquier puerto.
+
+---
+
+### 12. Servicios sin red explícita no pueden resolverse por nombre
+
+**Problema:** Los servicios `app` y `web` en `docker-compose.yml` no tenían declarado `networks: - garnacheros-network`, así que Docker Compose los dejaba en la red `default` en vez de la red nombrada donde sí estaban `db` y `api`. Resultado: nginx (`web`) no podía resolver `api` ni `app` por nombre de servicio (`host not found in upstream "api:3000"`) aunque la configuración de puertos ya era correcta.
+
+**Solución:**
+- ✅ Agregar `networks: - garnacheros-network` explícitamente a los servicios `app` y `web`
+
+**Archivo:** [docker-compose.yml](docker-compose.yml)
+
+**Guard:** `docker logs garnacheros-web` no debe mostrar `host not found in upstream`
+
+**Lección:** Si un `docker-compose.yml` define una red custom (`garnacheros-network`), **todos** los servicios que necesitan comunicarse entre sí deben declararla explícitamente — no se hereda automáticamente ni siquiera si otros servicios del mismo archivo ya la usan.
+
+---
+
+### 13. Imports con extensión `.js` sobrevivieron a la reversión ESM→CommonJS
+
+**Problema:** Tras revertir `tsconfig.json`/`package.json` a CommonJS (ver gotcha #8), el `seed` seguía fallando con `Cannot find module './db.js'`. Varios archivos (`src/db/seed.ts`, `src/db/schema.ts`, `src/routes/spots.ts`, `src/routes/reviews.ts`) habían quedado con imports estilo ESM (`from "./db.js"`) de un intento previo de migración, y ts-node/CommonJS no resuelve `./db.js` cuando el archivo real es `db.ts` (busca literalmente `db.js` en `src/`, que no existe).
+
+**Solución:** Remover la extensión `.js` de todos los imports/`require` relativos en `backend/src/**/*.ts`.
+
+**Guard:** `npm run seed` debe completar sin `MODULE_NOT_FOUND`
+
+**Lección:** Al revertir una migración ESM↔CommonJS, revisar TODO el árbol de imports, no solo los archivos de configuración (`tsconfig.json`, `package.json`). Un `grep -rn '\.js"' src/` antes y después del cambio de sistema de módulos evita este tipo de residuo.
+
+---
+
+### 14. `DATABASE_URL` placeholder sin llenar + archivo `.env` equivocado
+
+**Problema:** `backend/db.ts` carga variables con `dotenv.config()` (que por defecto lee `backend/.env`), pero el proyecto solo tenía `backend/.env.local` con un placeholder sin completar (`postgresql://user@host:5432/garnacheros`, sin password ni host real). Esto causaba errores confusos (`SASL: client password must be a string`, luego `ENOTFOUND host`) al correr `npm run seed` desde el host.
+
+**Solución:**
+- ✅ Usar `backend/.env` (no `.env.local`) como indica `CLAUDE.md`
+- ✅ Para ejecutar `npm run seed` desde el host (fuera de Docker), `DATABASE_URL` debe apuntar a `localhost:5432` (el puerto mapeado), con las credenciales dev ya públicas en `docker-compose.yml` (`garnacheros:garnacheros_dev_password`) — dentro de contenedores Docker sí se usa `db:5432` como host
+
+**Archivo:** `backend/.env` (gitignored, no committeado)
+
+**Guard:** `npm run seed` debe insertar los 10 puestos sin error de conexión
+
+**Lección:** El nombre de host en `DATABASE_URL` depende de si el proceso corre dentro de Docker (`db`) o en el host (`localhost`) — mantener claro cuál se usa dónde evita confusión al debuggear.
+
+---
+
+### 15. Clerk `<SignIn>` no está localizado a español por defecto
+
+**Problema:** El test E2E `auth.spec.ts` esperaba el texto `"Inicio de sesión"` en la página de login, pero el componente `<SignIn>` de Clerk renderiza en inglés por defecto (`"Sign in to garnacheros"`) a menos que se configure localización explícita.
+
+**Solución:** Ajustar la aserción del test para verificar el heading real de la landing (`🌮 Garnacheros`) y un heading de Clerk en inglés (`/sign in/i`), en vez de asumir texto en español no configurado.
+
+**Archivo:** [tests/e2e/auth.spec.ts](tests/e2e/auth.spec.ts)
+
+**Guard:** Suite completa de Playwright (`npm run test:e2e`) — 10/10 tests deben pasar
+
+**Lección:** Si se quiere Clerk en español, hay que pasar `localization` desde `@clerk/localizations` al `<ClerkProvider>`; mientras tanto, los tests deben reflejar el idioma real renderizado, no el idioma deseado del producto.
+
+---
+
+### 16. Variables `NEXT_PUBLIC_*` no llegan al bundle si solo se pasan en runtime
+
+**Problema:** `docker-compose.yml` pasaba `NEXT_PUBLIC_API_URL` y `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` como `environment:` (runtime) del servicio `app`, pero Next.js **inyecta las variables `NEXT_PUBLIC_*` en el bundle del cliente durante `next build`**, no en runtime. Como el `Dockerfile` no las recibía como build args, el cliente quedaba compilado con el valor default hardcodeado en `lib/api.ts` (`http://localhost:3001/api`), un puerto inexistente — el fetch fallaba silenciosamente (catch vacío) y la UI mostraba "No se encontraron puestos" sin ningún error visible.
+
+**Solución:**
+- ✅ `frontend/Dockerfile`: declarar `ARG NEXT_PUBLIC_API_URL` / `ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` y volcarlas a `ENV` antes de `RUN npm run build`
+- ✅ `docker-compose.yml`: pasar `build.args` además de (no en vez de) `environment:` para el servicio `app`
+
+**Archivos:** [frontend/Dockerfile](frontend/Dockerfile), [docker-compose.yml](docker-compose.yml)
+
+**Guard:** Test E2E de Playwright para `/spots` debería verificar que la lista de puestos no está vacía tras el seed (pendiente de agregar como test explícito — hoy solo se verifica el endpoint de la API, no el renderizado del cliente)
+
+**Lección:** Con Next.js, cualquier variable `NEXT_PUBLIC_*` usada en código de cliente debe pasarse como **build arg**, no solo como variable de entorno de runtime del contenedor. Si cambia su valor, hay que reconstruir la imagen — no basta con reiniciar el contenedor.
+
+---
+
+### 17. CORS solo permitía un origen, bloqueando acceso directo al puerto del frontend
+
+**Problema:** `backend/src/main.ts` configuraba `app.enableCors({ origin: process.env.FRONTEND_URL })`, con `FRONTEND_URL=http://localhost` (el origen de nginx). Al acceder directo a `http://localhost:5173` (bypaseando nginx), el navegador bloqueaba las peticiones a la API por CORS, y de nuevo el error quedaba oculto (catch vacío en `apiClient`).
+
+**Solución:** Cambiar `origin` a un array con ambos orígenes válidos en desarrollo: `[process.env.FRONTEND_URL, 'http://localhost:5173']`.
+
+**Archivo:** [backend/src/main.ts](backend/src/main.ts)
+
+**Guard:** Test E2E de CORS ya existente (preflight) debería extenderse para probar ambos orígenes
+
+**Lección:** En desarrollo local con múltiples puntos de entrada (nginx en :80 y el dev server directo en :5173), CORS debe permitir explícitamente todos los orígenes por los que un humano puede acceder al front — no solo el "oficial" de producción.
+
+---
+
+### 18. `catch` silenciosos en el cliente API ocultan errores reales
+
+**Problema:** Los tres gotchas anteriores (#16, #17, y URLs de imagen rotas) fueron difíciles de diagnosticar porque `SpotsList.tsx`/`SpotDetail.tsx` hacían `.catch(console.error)` sin mostrar nada en la UI — la única señal visible era "No se encontraron puestos", indistinguible de una DB realmente vacía.
+
+**Lección (pendiente de aplicar):** Los componentes cliente deberían distinguir entre "sin resultados" y "error de red/CORS" en la UI (ej. un mensaje de error visible), para que estos bugs sean autodescriptivos en vez de requerir inspeccionar la consola del navegador o el Network tab.
+
+---
+
+### 19. La mayoría de las URLs de imagen del seed eran inválidas (404)
+
+**Problema:** 8 de 10 `image_url` en `backend/src/db/seed.ts` apuntaban a IDs de fotos de Unsplash que devolvían 404 (fotos borradas/inexistentes), causando que casi todas las tarjetas de puestos mostraran imagen rota.
+
+**Solución:**
+- ✅ Reemplazar las URLs por IDs de Unsplash verificados con `curl -o /dev/null -w "%{http_code}"` antes de commitear
+- ✅ Agregar lógica de `UPDATE` en `seed.ts` para que re-correr el seed también actualice `image_url` en puestos ya existentes (antes el seed solo insertaba si el puesto no existía, así que corregir el array no tenía efecto sin borrar la tabla)
+
+**Archivo:** [backend/src/db/seed.ts](backend/src/db/seed.ts)
+
+**Guard:** Antes de agregar una URL de imagen externa al seed, verificar con `curl -s -o /dev/null -w "%{http_code}"` que responde 200
+
+**Lección:** Nunca confiar en URLs de imagen "de memoria" — los IDs de recursos de terceros (Unsplash, etc.) expiran o cambian. Verificar siempre antes de commitear, y hacer que el seed sea idempotente también para actualizaciones, no solo inserciones.
+
+---
+
+### 20. Agregados de Postgres (`AVG`, `COUNT`) llegan como `string` desde `node-pg`, no `number`
+
+**Problema:** `spots.service.ts` calcula `ROUND(AVG(r.rating)::numeric, 1) as avg_rating` y `COUNT(r.id) as review_count`. El driver `pg` de Node.js devuelve columnas `numeric`/`bigint` como **strings** (para no perder precisión), no como `number`. El frontend hacía `(spot.avg_rating || 0).toFixed(1)`, lo cual funcionaba mientras `avg_rating` era `null` (sin reseñas → cae a `0`, un number), pero **crasheaba con `TypeError: avg_rating.toFixed is not a function`** en cuanto un puesto tenía al menos una reseña real (avg_rating pasaba a ser el string `"5.0"`). Esto se manifestaba como: pantalla de "Application error" al enviar una reseña, y estrellas que parecían no responder a clicks (en realidad la página entera ya había crasheado en un render previo, antes de que cualquier botón pudiera funcionar).
+
+**Solución:** Castear explícitamente con `Number(...)` antes de usar métodos numéricos: `(Number(spot.avg_rating) || 0).toFixed(1)` y `Number(spot.review_count) || 0`.
+
+**Archivos:** [frontend/components/SpotCard.tsx](frontend/components/SpotCard.tsx), [frontend/components/SpotDetail.tsx](frontend/components/SpotDetail.tsx)
+
+**Guard:** Test E2E debería cubrir el flujo completo de "crear reseña → recargar detalle del puesto" para un puesto con ≥1 reseña, no solo el estado inicial sin reseñas (pendiente de agregar)
+
+**Lección:** Cualquier valor que salga de una agregación SQL (`AVG`, `SUM`, `COUNT`) vía `pg` debe tratarse como `string | null` en TypeScript, nunca como `number` directo, y convertirse explícitamente con `Number()` antes de usar métodos como `.toFixed()`. El bug se escondió porque el caso "sin datos" (`null`) coincidía por casualidad con el fallback seguro (`0`), ocultando el problema hasta que había datos reales.
+
+---
+
+### 21. Rating por defecto en 5 + toggle-al-clic = deselección accidental
+
+**Problema:** Al agregar la función de "deseleccionar estrella" (clic en la estrella ya marcada la resetea a 0), el estado inicial `rating` seguía en `useState(5)` — es decir, las 5 estrellas ya aparecían doradas desde que cargaba la página. El primer clic natural de un usuario (en la 5ta estrella, para "confirmar 5 de 5") coincidía con el valor ya seleccionado, así que el toggle lo interpretaba como "declic" y bajaba el rating a `0` en vez de mantenerlo en 5. Resultado percibido: "selecciono 5 estrellas y no pasa nada", el botón de enviar quedaba deshabilitado (`rating < 1`), nunca llegaba el POST al backend, y el promedio se quedaba en 0.0.
+
+**Solución:** Cambiar el estado inicial de `rating` a `0` (sin selección), tanto en el `useState` inicial como en el reset tras enviar una reseña exitosamente.
+
+**Archivo:** [frontend/components/SpotDetail.tsx](frontend/components/SpotDetail.tsx)
+
+**Guard:** Test E2E debería simular clic en la estrella N donde N = valor inicial del rating, y verificar que el estado resultante sea el esperado (pendiente de agregar — hoy no hay cobertura de interacción de UI con clics reales en el formulario de reseña)
+
+**Lección:** Al agregar un toggle basado en "¿el valor clicado ya es el valor actual?", verificar que el valor inicial no coincida con la interacción más común esperada del usuario. Es más seguro que un control de calificación por estrellas empiece vacío (`0`) que precargado con un valor "por defecto" que compita con la lógica de selección/deselección.
+
+---
+
 ## Checklist E2E Antiregresión
 
 Estos tests corren en cada build para evitar regresiones:

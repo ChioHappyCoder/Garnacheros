@@ -8,8 +8,13 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost',
+    'http://localhost:5173',
+  ];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || '*',
+    origin: allowedOrigins,
     credentials: true,
   });
 

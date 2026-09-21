@@ -4,8 +4,10 @@ test.describe('Authentication', () => {
   test('Login page renders with SignIn component', async ({ page }) => {
     await page.goto('/');
 
-    // Debería mostrar el component de Clerk
-    await expect(page.locator('text=Inicio de sesión')).toBeVisible();
+    // Debería mostrar el heading de la landing y el componente SignIn de Clerk
+    // (Clerk no está localizado a español por defecto, renderiza en inglés)
+    await expect(page.locator('text=🌮 Garnacheros')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
   });
 
   test('Unauthenticated user cannot access /spots', async ({ page }) => {

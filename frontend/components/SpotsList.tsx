@@ -11,6 +11,7 @@ interface SpotsListProps {
 export default function SpotsList({ initialCity = 'all' }: SpotsListProps) {
   const [spots, setSpots] = useState<Spot[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>(initialCity);
 
@@ -23,16 +24,39 @@ export default function SpotsList({ initialCity = 'all' }: SpotsListProps) {
       .finally(() => setLoading(false));
   }, [searchTerm, selectedCity]);
 
+  const handleSearch = () => setSearchTerm(searchInput.trim());
+  const handleClear = () => {
+    setSearchInput('');
+    setSearchTerm('');
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8 space-y-4">
-        <input
-          type="text"
-          placeholder="Buscar por nombre, tipo de comida o colonia..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
-        />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, tipo de comida o colonia..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition"
+            >
+              Buscar
+            </button>
+            <button
+              onClick={handleClear}
+              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
 
         <div className="flex gap-4 flex-wrap">
           {['all', 'CDMX', 'Aguascalientes'].map((city) => (

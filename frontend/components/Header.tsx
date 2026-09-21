@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { UserButton } from '@clerk/nextjs';
+import { UserButton, SignOutButton } from '@clerk/nextjs';
 
 export default function Header() {
   return (
@@ -8,7 +8,14 @@ export default function Header() {
         <Link href="/spots" className="flex items-center gap-3 hover:opacity-80 transition">
           <h1 className="text-2xl font-bold text-orange-600">🌮 Garnacheros</h1>
         </Link>
-        <UserButton afterSignOutUrl="/" />
+        <div className="flex items-center gap-4">
+          <SignOutButton redirectUrl="/">
+            <button className="text-sm text-gray-600 hover:text-orange-600 transition">
+              Cerrar sesión
+            </button>
+          </SignOutButton>
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </div>
     </header>
   );
